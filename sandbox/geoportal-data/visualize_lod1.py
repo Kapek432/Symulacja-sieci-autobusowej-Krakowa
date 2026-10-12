@@ -9,6 +9,7 @@ Przyklady:
   python visualize_lod1.py gml_dir viewer --shapes shapes.txt --shape-id 179_1 --shape-id 179_2 --buffer 300
   python visualize_lod1.py gml_dir viewer --bbox 19.90 50.04 19.99 50.09 --serve
 """
+
 import argparse
 import json
 import math
@@ -341,10 +342,21 @@ def main():
     ap.add_argument("--shapes", help="GTFS shapes.txt, przycina do bufora wokol trasy")
     ap.add_argument("--shape-id", action="append")
     ap.add_argument("--buffer", type=float, default=250.0, help="bufor wokol trasy [m]")
-    ap.add_argument("--bbox", nargs=4, type=float, metavar=("LON_MIN", "LAT_MIN", "LON_MAX", "LAT_MAX"))
-    ap.add_argument("--max", type=int, default=150000, help="limit liczby budynkow w podgladzie")
+    ap.add_argument(
+        "--bbox",
+        nargs=4,
+        type=float,
+        metavar=("LON_MIN", "LAT_MIN", "LON_MAX", "LAT_MAX"),
+    )
+    ap.add_argument(
+        "--max", type=int, default=150000, help="limit liczby budynkow w podgladzie"
+    )
     ap.add_argument("--workers", type=int, default=max(1, (os.cpu_count() or 2) - 1))
-    ap.add_argument("--serve", action="store_true", help="uruchom lokalny serwer i otworz przegladarke")
+    ap.add_argument(
+        "--serve",
+        action="store_true",
+        help="uruchom lokalny serwer i otworz przegladarke",
+    )
     args = ap.parse_args()
 
     files = find_gml(args.input)
@@ -363,10 +375,15 @@ def main():
                 if args.shape_id and row["shape_id"] not in set(args.shape_id):
                     continue
                 by_shape.setdefault(row["shape_id"], []).append(
-                    (int(row["shape_pt_sequence"]), float(row["shape_pt_lon"]), float(row["shape_pt_lat"]))
+                    (
+                        int(row["shape_pt_sequence"]),
+                        float(row["shape_pt_lon"]),
+                        float(row["shape_pt_lat"]),
+                    )
                 )
         route_paths = [
-            {"id": sid, "path": [[lon, lat] for _, lon, lat in sorted(pts)]} for sid, pts in by_shape.items()
+            {"id": sid, "path": [[lon, lat] for _, lon, lat in sorted(pts)]}
+            for sid, pts in by_shape.items()
         ]
     if args.bbox:
         x0, y0 = TO_PL.transform(args.bbox[0], args.bbox[1])
@@ -376,10 +393,18 @@ def main():
 
     print(f"Czytam {len(files)} plikow ({args.workers} procesow)...", file=sys.stderr)
     seen, features, heights = set(), [], []
-    totals = {"buildings_in_files": 0, "no_footprint": 0, "duplicates": 0, "repaired": 0, "outside_filter": 0}
+    totals = {
+        "buildings_in_files": 0,
+        "no_footprint": 0,
+        "duplicates": 0,
+        "repaired": 0,
+        "outside_filter": 0,
+    }
     failed = []
     with Pool(args.workers) as pool:
-        for n, (result, st, err) in enumerate(pool.imap_unordered(read_file, files, chunksize=4), 1):
+        for n, (result, st, err) in enumerate(
+            pool.imap_unordered(read_file, files, chunksize=4), 1
+        ):
             if err:
                 failed.append(err)
             totals["buildings_in_files"] += st.get("buildings_in_files", 0)
@@ -404,16 +429,31 @@ def main():
                         "properties": {"id": bid, "height": round(height, 2)},
                         "geometry": {
                             "type": "Polygon",
-                            "coordinates": [[[round(x, 6), round(y, 6)] for x, y in zip(lon, lat)]],
+                            "coordinates": [
+                                [[round(x, 6), round(y, 6)] for x, y in zip(lon, lat)]
+                            ],
                         },
                     }
                 )
                 heights.append(height)
             if n % 100 == 0:
-                print(f"  {n}/{len(files)} plikow, {len(features)} budynkow", file=sys.stderr)
+                print(
+                    f"  {n}/{len(files)} plikow, {len(features)} budynkow",
+                    file=sys.stderr,
+                )
 
     unique = totals["buildings_in_files"] - totals["duplicates"]
-    flt = " + ".join(x for x in ("bufor trasy" if args.shapes else None, "bbox" if args.bbox else None) if x) or None
+    flt = (
+        " + ".join(
+            x
+            for x in (
+                "bufor trasy" if args.shapes else None,
+                "bbox" if args.bbox else None,
+            )
+            if x
+        )
+        or None
+    )
     print("Podsumowanie wczytywania:")
     print(f"  plikow .gml: {len(files)}, z bledem odczytu: {len(failed)}")
     for msg in failed[:5]:
@@ -426,11 +466,16 @@ def main():
     print(f"  naprawione nieprawidlowe geometrie: {totals['repaired']}")
     print(f"  pasuje do podgladu: {len(features)}")
     if not features:
-        sys.exit("Brak budynkow po filtrowaniu. Sprawdz bbox, shape_id i czy pliki obejmuja te okolice.")
+        sys.exit(
+            "Brak budynkow po filtrowaniu. Sprawdz bbox, shape_id i czy pliki obejmuja te okolice."
+        )
     if len(features) > args.max:
         step = len(features) / args.max
         features = [features[int(i * step)] for i in range(args.max)]
-        print(f"Uwaga: ograniczono do {args.max} budynkow (zwieksz --max lub zawez obszar).", file=sys.stderr)
+        print(
+            f"Uwaga: ograniczono do {args.max} budynkow (zwieksz --max lub zawez obszar).",
+            file=sys.stderr,
+        )
 
     heights.sort()
     p95 = heights[int(0.95 * (len(heights) - 1))]
@@ -456,11 +501,17 @@ def main():
         f.write("window.VIEWER_DATA = ")
         json.dump(payload, f, separators=(",", ":"))
         f.write(";\n")
-    for name, text in (("index.html", INDEX_HTML), ("style.css", STYLE_CSS), ("app.js", APP_JS)):
+    for name, text in (
+        ("index.html", INDEX_HTML),
+        ("style.css", STYLE_CSS),
+        ("app.js", APP_JS),
+    ):
         with open(os.path.join(args.output, name), "w", encoding="utf-8") as f:
             f.write(text)
     size_mb = os.path.getsize(os.path.join(args.output, "data.js")) / 1e6
-    print(f"Gotowe: {len(features)} budynkow, data.js {size_mb:.1f} MB. Otworz {args.output}/index.html")
+    print(
+        f"Gotowe: {len(features)} budynkow, data.js {size_mb:.1f} MB. Otworz {args.output}/index.html"
+    )
     if args.serve:
         serve(args.output)
 

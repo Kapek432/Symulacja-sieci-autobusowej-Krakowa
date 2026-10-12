@@ -9,6 +9,7 @@ Konfiguracja przez zmienne srodowiskowe:
              (0 = wszystkie); domyslnie 5 dla autobusow, 0 dla tramwajow
   SAVE_RAW   1 = zapisuj dodatkowo surowe pliki .pb (gzip)
 """
+
 import gzip
 import hashlib
 import logging
@@ -20,8 +21,8 @@ from pathlib import Path
 
 import pandas as pd
 import requests
-from google.transit import gtfs_realtime_pb2
 from google.protobuf.message import DecodeError
+from google.transit import gtfs_realtime_pb2
 
 RETRIES = 3
 RETRY_WAIT_S = 1.5
@@ -32,28 +33,45 @@ URL_VP = f"{BASE}/VehiclePositions_{GROUP}.pb"
 URL_TU = f"{BASE}/TripUpdates_{GROUP}.pb"
 URL_STATIC = f"{BASE}/GTFS_KRK_{GROUP}.zip"
 
-OUT = Path(os.environ.get("OUT_DIR", "data/raw" if GROUP == "T" else f"data/raw_{GROUP}"))
+ROOT = Path(__file__).resolve().parent
+OUT = Path(
+    os.environ.get("OUT_DIR")
+    or ROOT / ("data/raw" if GROUP == "T" else f"data/raw_{GROUP}")
+)
 POLL_S = int(os.environ.get("POLL_S", "15"))
 FLUSH_S = int(os.environ.get("FLUSH_S", "600"))
 MAX_STOPS = int(os.environ.get("MAX_STOPS", "0" if GROUP == "T" else "5"))
 SAVE_RAW = os.environ.get("SAVE_RAW", "0") == "1"
-TU_EVERY = int(os.environ.get("TU_EVERY", "1"))   # TripUpdates co N cykli odpytywania
+TU_EVERY = int(os.environ.get("TU_EVERY", "1"))  # TripUpdates co N cykli odpytywania
 
 STATIC_CHECK_S = 6 * 3600
 TIMEOUT_S = 10
-STALE_WARN_POLLS = max(1, 300 // POLL_S)   # ostrzezenie po ok. 5 min bez zmian
-STALE_POSITION_S = 300                      # pozycja starsza niz 5 min = ostrzezenie
-HEADERS = {"User-Agent": "tram-bunching-student-project (kontakt: klipiec@student.agh.edu.pl)"}
+STALE_WARN_POLLS = max(1, 300 // POLL_S)  # ostrzezenie po ok. 5 min bez zmian
+STALE_POSITION_S = 300  # pozycja starsza niz 5 min = ostrzezenie
+HEADERS = {
+    "User-Agent": "tram-bunching-student-project (kontakt: klipiec@student.agh.edu.pl)"
+}
 
 log = logging.getLogger("logger")
 
 DTYPES = {
-    "feed_ts": "Int64", "veh_ts": "Int64", "tu_ts": "Int64",
-    "direction_id": "Int64", "current_stop_sequence": "Int64",
-    "current_status": "Int64", "stop_sequence": "Int64",
-    "trip_delay": "Int64", "arr_delay": "Int64", "arr_time": "Int64",
-    "dep_delay": "Int64", "dep_time": "Int64", "sched_rel": "Int64",
-    "lat": "float64", "lon": "float64", "bearing": "float64", "speed": "float64",
+    "feed_ts": "Int64",
+    "veh_ts": "Int64",
+    "tu_ts": "Int64",
+    "direction_id": "Int64",
+    "current_stop_sequence": "Int64",
+    "current_status": "Int64",
+    "stop_sequence": "Int64",
+    "trip_delay": "Int64",
+    "arr_delay": "Int64",
+    "arr_time": "Int64",
+    "dep_delay": "Int64",
+    "dep_time": "Int64",
+    "sched_rel": "Int64",
+    "lat": "float64",
+    "lon": "float64",
+    "bearing": "float64",
+    "speed": "float64",
     "fetched_at": "float64",
 }
 
@@ -80,22 +98,26 @@ def parse_vehicle_positions(feed, fetched_at):
             continue
         v = e.vehicle
         pos = v.position if v.HasField("position") else None
-        rows.append({
-            "fetched_at": fetched_at,
-            "feed_ts": feed.header.timestamp,
-            "entity_id": e.id,
-            "vehicle_id": g(v.vehicle, "id") if v.HasField("vehicle") else None,
-            "vehicle_label": g(v.vehicle, "label") if v.HasField("vehicle") else None,
-            **trip_fields(v.trip),
-            "lat": pos.latitude if pos else None,
-            "lon": pos.longitude if pos else None,
-            "bearing": g(pos, "bearing") if pos else None,
-            "speed": g(pos, "speed") if pos else None,
-            "veh_ts": g(v, "timestamp"),
-            "current_stop_sequence": g(v, "current_stop_sequence"),
-            "stop_id": v.stop_id or None,
-            "current_status": g(v, "current_status"),
-        })
+        rows.append(
+            {
+                "fetched_at": fetched_at,
+                "feed_ts": feed.header.timestamp,
+                "entity_id": e.id,
+                "vehicle_id": g(v.vehicle, "id") if v.HasField("vehicle") else None,
+                "vehicle_label": g(v.vehicle, "label")
+                if v.HasField("vehicle")
+                else None,
+                **trip_fields(v.trip),
+                "lat": pos.latitude if pos else None,
+                "lon": pos.longitude if pos else None,
+                "bearing": g(pos, "bearing") if pos else None,
+                "speed": g(pos, "speed") if pos else None,
+                "veh_ts": g(v, "timestamp"),
+                "current_stop_sequence": g(v, "current_stop_sequence"),
+                "stop_id": v.stop_id or None,
+                "current_status": g(v, "current_status"),
+            }
+        )
     return rows
 
 
@@ -114,9 +136,15 @@ def parse_trip_updates(feed, fetched_at):
             "tu_ts": g(tu, "timestamp"),
             "trip_delay": g(tu, "delay"),
         }
-        empty = {"stop_sequence": None, "stop_id": None, "arr_delay": None,
-                 "arr_time": None, "dep_delay": None, "dep_time": None,
-                 "sched_rel": None}
+        empty = {
+            "stop_sequence": None,
+            "stop_id": None,
+            "arr_delay": None,
+            "arr_time": None,
+            "dep_delay": None,
+            "dep_time": None,
+            "sched_rel": None,
+        }
         updates = list(tu.stop_time_update)
         if MAX_STOPS:
             updates = updates[:MAX_STOPS]
@@ -126,16 +154,18 @@ def parse_trip_updates(feed, fetched_at):
         for s in updates:
             arr = s.arrival if s.HasField("arrival") else None
             dep = s.departure if s.HasField("departure") else None
-            rows.append({
-                **base,
-                "stop_sequence": g(s, "stop_sequence"),
-                "stop_id": s.stop_id or None,
-                "arr_delay": g(arr, "delay") if arr else None,
-                "arr_time": g(arr, "time") if arr else None,
-                "dep_delay": g(dep, "delay") if dep else None,
-                "dep_time": g(dep, "time") if dep else None,
-                "sched_rel": g(s, "schedule_relationship"),
-            })
+            rows.append(
+                {
+                    **base,
+                    "stop_sequence": g(s, "stop_sequence"),
+                    "stop_id": s.stop_id or None,
+                    "arr_delay": g(arr, "delay") if arr else None,
+                    "arr_time": g(arr, "time") if arr else None,
+                    "dep_delay": g(dep, "delay") if dep else None,
+                    "dep_time": g(dep, "time") if dep else None,
+                    "sched_rel": g(s, "schedule_relationship"),
+                }
+            )
     return rows
 
 
@@ -205,10 +235,19 @@ def update_static(session):
 
 
 def main():
-    logging.basicConfig(level=logging.INFO,
-                        format="%(asctime)s %(levelname)s [%(name)s] %(message)s")
-    log.info("start: GROUP=%s OUT=%s POLL_S=%d TU_EVERY=%d FLUSH_S=%d MAX_STOPS=%d SAVE_RAW=%s",
-             GROUP, OUT, POLL_S, TU_EVERY, FLUSH_S, MAX_STOPS, SAVE_RAW)
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s %(levelname)s [%(name)s] %(message)s"
+    )
+    log.info(
+        "start: GROUP=%s OUT=%s POLL_S=%d TU_EVERY=%d FLUSH_S=%d MAX_STOPS=%d SAVE_RAW=%s",
+        GROUP,
+        OUT,
+        POLL_S,
+        TU_EVERY,
+        FLUSH_S,
+        MAX_STOPS,
+        SAVE_RAW,
+    )
 
     stop = {"flag": False}
 
@@ -258,8 +297,12 @@ def main():
             if digest == last_hash[name]:
                 unchanged[name] += 1
                 if unchanged[name] % STALE_WARN_POLLS == 0:
-                    log.warning("%s: plik bez zmian od %d odczytow (Last-Modified: %s)",
-                                name, unchanged[name], last_mod)
+                    log.warning(
+                        "%s: plik bez zmian od %d odczytow (Last-Modified: %s)",
+                        name,
+                        unchanged[name],
+                        last_mod,
+                    )
                 continue
             unchanged[name] = 0
             last_hash[name] = digest

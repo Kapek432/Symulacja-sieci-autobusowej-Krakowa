@@ -1,2 +1,4 @@
 local/
-data/geoportal/LoD*/
+data/geoportal/LoD*/*
+data/processed/*
+data/raw_A/*

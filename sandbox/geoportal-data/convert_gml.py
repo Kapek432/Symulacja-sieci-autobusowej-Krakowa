@@ -5,6 +5,7 @@ Przyklady:
   python convert_gml.py gml_dir out.geojson
   python convert_gml.py gml_dir out.geojson --shapes gtfs/shapes.txt --shape-id 179_1 --buffer 250
 """
+
 import argparse
 import csv
 import glob
@@ -36,7 +37,9 @@ def parse_poslist(text):
 def building_footprint(building):
     """Zwraca (pierscien [(x, y)], z_podstawy, z_dachu) albo None."""
     rings = []
-    for pl in building.iterfind(".//gml:Polygon/gml:exterior/gml:LinearRing/gml:posList", NS):
+    for pl in building.iterfind(
+        ".//gml:Polygon/gml:exterior/gml:LinearRing/gml:posList", NS
+    ):
         pts = parse_poslist(pl.text)
         if len(pts) >= 4:
             rings.append(pts)
@@ -89,7 +92,11 @@ def load_route_buffer(shapes_path, shape_ids, buffer_m):
             if shape_ids and row["shape_id"] not in shape_ids:
                 continue
             by_shape.setdefault(row["shape_id"], []).append(
-                (int(row["shape_pt_sequence"]), float(row["shape_pt_lon"]), float(row["shape_pt_lat"]))
+                (
+                    int(row["shape_pt_sequence"]),
+                    float(row["shape_pt_lon"]),
+                    float(row["shape_pt_lat"]),
+                )
             )
     if not by_shape:
         sys.exit("Brak pasujacych shape_id w shapes.txt")
@@ -106,12 +113,18 @@ def main():
     ap.add_argument("input", help="plik .gml albo folder z plikami .gml")
     ap.add_argument("output", help="wyjsciowy plik .geojson")
     ap.add_argument("--shapes", help="GTFS shapes.txt, do przyciecia do trasy")
-    ap.add_argument("--shape-id", action="append", help="shape_id do uzycia (mozna powtarzac)")
-    ap.add_argument("--buffer", type=float, default=250.0, help="bufor wokol trasy w metrach")
+    ap.add_argument(
+        "--shape-id", action="append", help="shape_id do uzycia (mozna powtarzac)"
+    )
+    ap.add_argument(
+        "--buffer", type=float, default=250.0, help="bufor wokol trasy w metrach"
+    )
     args = ap.parse_args()
 
     if os.path.isdir(args.input):
-        files = sorted(glob.glob(os.path.join(args.input, "**", "*.gml"), recursive=True))
+        files = sorted(
+            glob.glob(os.path.join(args.input, "**", "*.gml"), recursive=True)
+        )
     else:
         files = [args.input]
     if not files:
@@ -136,7 +149,11 @@ def main():
             features.append(
                 {
                     "type": "Feature",
-                    "properties": {"id": bid, "height": height, "base_z": round(zmin, 2)},
+                    "properties": {
+                        "id": bid,
+                        "height": height,
+                        "base_z": round(zmin, 2),
+                    },
                     "geometry": {"type": "Polygon", "coordinates": [coords]},
                 }
             )

@@ -11,6 +11,7 @@ Przyklady:
   python convert_lod2.py gml_dir out.glb
   python convert_lod2.py gml_dir out.glb --shapes gtfs/shapes.txt --shape-id 179_1 --buffer 250
 """
+
 import argparse
 import csv
 import glob
@@ -30,7 +31,14 @@ NS = {
     "gml": "http://www.opengis.net/gml",
     "gen": "http://www.opengis.net/citygml/generics/2.0",
 }
-SURFACES = ("GroundSurface", "WallSurface", "RoofSurface", "OuterCeilingSurface", "OuterFloorSurface", "ClosureSurface")
+SURFACES = (
+    "GroundSurface",
+    "WallSurface",
+    "RoofSurface",
+    "OuterCeilingSurface",
+    "OuterFloorSurface",
+    "ClosureSurface",
+)
 
 TO_WGS = Transformer.from_crs(2180, 4326, always_xy=True)
 TO_PL = Transformer.from_crs(4326, 2180, always_xy=True)
@@ -43,7 +51,7 @@ def ring_points(ring):
     pl = ring.find("gml:posList", NS)
     if pl is not None:
         vals = [float(v) for v in pl.text.split()]
-        return [tuple(vals[i:i + 3]) for i in range(0, len(vals) - 2, 3)]
+        return [tuple(vals[i : i + 3]) for i in range(0, len(vals) - 2, 3)]
     return []
 
 
@@ -63,7 +71,9 @@ def triangulate(points):
     drop = int(np.argmax(np.abs(n)))
     keep = [i for i in range(3) if i != drop]
     p2 = pts[:, keep]
-    tri = earcut.triangulate_float64(p2, np.array([len(p2)], dtype=np.uint32)).reshape(-1, 3)
+    tri = earcut.triangulate_float64(p2, np.array([len(p2)], dtype=np.uint32)).reshape(
+        -1, 3
+    )
     # zachowaj orientacje zgodna z normalna wielokata
     out = []
     for t in tri:
@@ -106,7 +116,11 @@ def load_route_buffer(shapes_path, shape_ids, buffer_m):
             if shape_ids and row["shape_id"] not in shape_ids:
                 continue
             by_shape.setdefault(row["shape_id"], []).append(
-                (int(row["shape_pt_sequence"]), float(row["shape_pt_lon"]), float(row["shape_pt_lat"]))
+                (
+                    int(row["shape_pt_sequence"]),
+                    float(row["shape_pt_lon"]),
+                    float(row["shape_pt_lat"]),
+                )
             )
     if not by_shape:
         sys.exit("Brak pasujacych shape_id w shapes.txt")
@@ -133,7 +147,11 @@ def main():
     )
     if not files:
         sys.exit("Nie znaleziono plikow .gml")
-    area = load_route_buffer(args.shapes, set(args.shape_id or []), args.buffer) if args.shapes else None
+    area = (
+        load_route_buffer(args.shapes, set(args.shape_id or []), args.buffer)
+        if args.shapes
+        else None
+    )
 
     buildings, seen = [], set()
     for path in files:
@@ -141,7 +159,9 @@ def main():
             if bid in seen:
                 continue
             if area is not None:
-                ground = [p for t, p in polys if t == "GroundSurface"] or [p for _, p in polys]
+                ground = [p for t, p in polys if t == "GroundSurface"] or [
+                    p for _, p in polys
+                ]
                 fp = Polygon([(x, y) for x, y, _ in ground[0]])
                 if not fp.is_valid or not fp.intersects(area):
                     continue
@@ -151,7 +171,10 @@ def main():
         sys.exit("Zadne budynki nie spelniaja warunkow")
 
     allp = np.array([p for _, polys in buildings for _, pts in polys for p in pts])
-    ox, oy = (allp[:, 0].min() + allp[:, 0].max()) / 2, (allp[:, 1].min() + allp[:, 1].max()) / 2
+    ox, oy = (
+        (allp[:, 0].min() + allp[:, 0].max()) / 2,
+        (allp[:, 1].min() + allp[:, 1].max()) / 2,
+    )
     oz = allp[:, 2].min()
 
     scene = trimesh.Scene()
@@ -186,7 +209,9 @@ def main():
             f,
             indent=1,
         )
-    print(f"Zapisano {len(meta)} budynkow do {args.output}; poczatek: lon={lon:.6f} lat={lat:.6f}")
+    print(
+        f"Zapisano {len(meta)} budynkow do {args.output}; poczatek: lon={lon:.6f} lat={lat:.6f}"
+    )
 
 
 if __name__ == "__main__":
