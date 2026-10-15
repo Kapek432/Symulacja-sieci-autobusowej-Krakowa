@@ -2,3 +2,13 @@ local/
 data/geoportal/LoD*/*
 data/processed/*
 data/raw_A/*
+# Unity (projekt w unity/)
+unity/[Ll]ibrary/
+unity/[Tt]emp/
+unity/[Oo]bj/
+unity/[Bb]uild/
+unity/[Bb]uilds/
+unity/[Ll]ogs/
+unity/[Uu]ser[Ss]ettings/
+unity/*.csproj
+unity/*.sln
