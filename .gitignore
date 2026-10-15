@@ -2,7 +2,7 @@ local/
 data/geoportal/LoD*/*
 data/processed/*
 data/raw_A/*
-# Unity (projekt w unity/)
+# Unity (project in unity/)
 unity/[Ll]ibrary/
 unity/[Tt]emp/
 unity/[Oo]bj/

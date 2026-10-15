@@ -1,16 +1,16 @@
-"""export_unity.py: eksport pozycji autobusow do odtwarzania w Unity (kontrakt: EXPORT.md).
+"""export_unity.py: export bus positions for playback in Unity (contract: EXPORT.md).
 
-Wejscie: data/raw_A/vehicle_positions (logger) + rozklad GTFS z data/raw_A/static.
-Wyjscie: <out>.jsonl (jeden wiersz = jeden raport pojazdu) oraz <out>.meta.json.
+Input: data/raw_A/vehicle_positions (logger) + GTFS schedule from data/raw_A/static.
+Output: <out>.jsonl (one row = one vehicle report) and <out>.meta.json.
 
-Opoznienie liczymy z pozycji i rozkladu (TripUpdates ZTP nie podaja opoznien):
-- STOPPED_AT (1) na przystanku s: veh_ts - rozkladowy przyjazd na s,
-- w drodze do s (0, 2): rozkladowy czas interpolowany miedzy odjazdem z s-1 a przyjazdem na s
-  wedlug odleglosci w linii prostej do obu przystankow.
-Data obslugi: dzis albo wczoraj (czas lokalny), ta, ktora daje mniejsze |opoznienie|.
-Pojazd czekajacy na petli przed odjazdem: layover=true, delay_s=null.
+Delay is computed from positions and the schedule (ZTP TripUpdates carry no delays):
+- STOPPED_AT (1) at stop s: veh_ts - scheduled arrival at s,
+- en route to s (0, 2): scheduled time interpolated between departure from s-1 and
+  arrival at s by straight-line distance to both stops.
+Service date: today or yesterday (local time), whichever gives the smaller |delay|.
+Vehicle waiting at the terminus before departure: layover=true, delay_s=null.
 
-Przyklady:
+Examples:
   uv run src/viz/export_unity.py
   uv run src/viz/export_unity.py --from 2026-10-16T07:00 --to 2026-10-16T09:00 --routes 179,169,174
 """
@@ -27,10 +27,10 @@ import pandas as pd
 
 SCHEMA_VERSION = 1
 TZ = "Europe/Warsaw"
-# poczatek lokalnego ukladu wspolrzednych w Unity: Rynek Glowny
+# origin of the local Unity coordinate system: Main Market Square (Rynek Glowny)
 ORIGIN_LAT, ORIGIN_LON = 50.0617, 19.9373
 EARTH_R = 6_371_000.0
-LAYOVER_RADIUS_M = 150  # tak blisko 1. przystanku = pojazd jeszcze stoi na petli (parkuja dalej od slupka)
+LAYOVER_RADIUS_M = 150  # this close to the 1st stop = still at the terminus (buses park away from the pole)
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -41,17 +41,17 @@ def hms(col):
 
 
 def to_xz(lat, lon):
-    """Metry od ORIGIN: x na wschod, z na polnoc (rzut rownoodleglosciowy, ok. na skale miasta)."""
+    """Metres from ORIGIN: x east, z north (equirectangular, fine at city scale)."""
     x = np.radians(lon - ORIGIN_LON) * EARTH_R * np.cos(np.radians(ORIGIN_LAT))
     z = np.radians(lat - ORIGIN_LAT) * EARTH_R
     return x, z
 
 
 def pick_gtfs(static_dir, first_ts):
-    """Najnowszy ZIP pobrany nie pozniej niz pierwszy raport; jak brak, to najstarszy."""
+    """Newest ZIP fetched no later than the first report; otherwise the oldest one."""
     zips = sorted(glob.glob(str(static_dir / "GTFS_KRK_A_*.zip")))
     if not zips:
-        raise SystemExit(f"brak rozkladu w {static_dir}")
+        raise SystemExit(f"no schedule in {static_dir}")
     stamps = [re.search(r"_(\d{8}_\d{6})\.zip$", z).group(1) for z in zips]
     stamps = pd.to_datetime(stamps, format="%Y%m%d_%H%M%S").tz_localize("UTC")
     ok = [z for z, s in zip(zips, stamps) if s <= first_ts]
@@ -113,7 +113,7 @@ def load_schedule(zpath, trip_ids):
 
 
 def scheduled_offset(vp, st):
-    """Rozkladowy czas (sekundy od polnocy dnia obslugi) w miejscu i chwili raportu."""
+    """Scheduled time (seconds since service-day midnight) at the report's place and time."""
     cur = st.rename(
         columns={
             "arr_s": "arr_cur",
@@ -149,9 +149,9 @@ def scheduled_offset(vp, st):
     )
 
     stopped = (vp["current_status"] == 1).fillna(False).to_numpy()
-    # pierwszy przystanek kursu nie ma poprzedniego: wtedy tylko rozklad przystanku
+    # the first stop of a trip has no previous stop: use that stop's schedule only
     sched = np.where(stopped | np.isnan(between), df["arr_cur"].to_numpy(), between)
-    # pojazd na petli poczatkowej: na 1. przystanku albo "w drodze" do 2., ale jeszcze przy 1.
+    # vehicle at the origin terminus: at stop 1, or "en route" to stop 2 but still near stop 1
     first = df["trip_id"].map(st.groupby("trip_id")["stop_sequence"].min()).to_numpy()
     seq = df["stop_sequence"].to_numpy(dtype=float)
     at_origin = (seq == first) | ((seq == first + 1) & (d_prev < LAYOVER_RADIUS_M))
@@ -172,7 +172,7 @@ def build(vp, st):
     use0 = np.abs(ts - (mid0 + sched)) <= np.abs(ts - (mid1 + sched))
     mid = np.where(use0, mid0, mid1)
     delay = ts - (mid + sched)
-    # przed odjazdem z petli ujemne "opoznienie" to tylko czas do odjazdu, nie opoznienie
+    # before leaving the terminus a negative "delay" is just time to departure, not delay
     layover = at_origin & (delay < 0)
     delay = np.where(layover, np.nan, delay)
     sim_time = np.where(np.isnan(sched), np.nan, ts - mid)
@@ -200,7 +200,7 @@ def build(vp, st):
             "source": "obs",
         }
     )
-    out.loc[np.isnan(sched), "service_date"] = None  # brak kursu w rozkladzie
+    out.loc[np.isnan(sched), "service_date"] = None  # trip not in schedule
     return out
 
 
@@ -216,16 +216,16 @@ def main():
         type=Path,
         default=ROOT / "data" / "processed" / "unity_samples" / "obs",
     )
-    ap.add_argument("--from", dest="t_from", help="czas lokalny, np. 2026-10-16T07:00")
-    ap.add_argument("--to", dest="t_to", help="czas lokalny (bez tej chwili)")
-    ap.add_argument("--routes", help="linie po przecinku, np. 179,169")
-    ap.add_argument("--run-id", default=None, help="domyslnie obs_<pierwsza data>")
+    ap.add_argument("--from", dest="t_from", help="local time, e.g. 2026-10-16T07:00")
+    ap.add_argument("--to", dest="t_to", help="local time (exclusive)")
+    ap.add_argument("--routes", help="comma-separated routes, e.g. 179,169")
+    ap.add_argument("--run-id", default=None, help="default obs_<first timestamp>")
     a = ap.parse_args()
 
     routes = [r.strip() for r in a.routes.split(",")] if a.routes else None
     vp = load_vp(a.raw, parse_local(a.t_from), parse_local(a.t_to), routes)
     if vp.empty:
-        raise SystemExit("brak raportow pojazdow w zadanym zakresie")
+        raise SystemExit("no vehicle reports in the given range")
     first_ts = pd.Timestamp(int(vp["veh_ts"].min()), unit="s", tz="UTC")
     zpath = pick_gtfs(a.raw / "static", first_ts)
     st = load_schedule(zpath, set(vp["trip_id"]))
@@ -254,11 +254,11 @@ def main():
 
     d = out["delay_s"].dropna()
     print(
-        f"zapisano {jsonl}: {len(out)} wierszy, {meta['vehicles']} pojazdow, rozklad {zpath.name}"
+        f"saved {jsonl}: {len(out)} rows, {meta['vehicles']} vehicles, schedule {zpath.name}"
     )
     print(
-        f"opoznienie policzone dla {len(d) / len(out):.1%} wierszy,"
-        f" postoj na petli przed odjazdem: {out['layover'].mean():.1%}"
+        f"delay computed for {len(d) / len(out):.1%} of rows,"
+        f" layover before departure: {out['layover'].mean():.1%}"
     )
     if len(d):
         print(d.describe(percentiles=[0.05, 0.5, 0.95]).round(0).to_string())
