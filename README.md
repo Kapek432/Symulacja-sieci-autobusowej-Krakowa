@@ -23,7 +23,7 @@ uv run events-quality
 uv run sandbox/gtfs-experiments/week_analysis.py 179
 ```
 
-`build-events` przelicza tylko dni, których dotyczą nowe pliki (`--dry-run` pokazuje które, `--full` liczy wszystko od zera). Wyniki: `data/processed/events/YYYY-MM-DD.parquet` (zdarzenia per data obsługi), `data/processed/days.csv` (status dni: `complete` / `provisional` / `gap` / `special`), `data/processed/manifest.json`, raport w `data/processed/week_report/`.
+`build-events` przelicza tylko dni, których dotyczą nowe pliki (`--dry-run` pokazuje które, `--full` liczy wszystko od zera). Wyniki: `data/processed/events/YYYY-MM-DD.parquet` (zdarzenia per data obsługi), `data/processed/chains/YYYY-MM-DD.parquet` (łańcuchy kursów pojazdów), `data/processed/days.csv` (status dni: `complete` / `provisional` / `gap` / `special`), `data/processed/manifest.json`, raport w `data/processed/week_report/`.
 
 Kod pakietu: `src/krakbus/` (`ingest/` rozkład GTFS i surowe partycje, `observed/` zdarzenia i rejestr dni), progi w `configs/config.yaml`.
 

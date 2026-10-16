@@ -31,6 +31,34 @@ Zasady:
 
 ---
 
+## 2026-10-16 — łańcuchy kursów pojazdów (M1 C)
+
+**Kto:** Kacper Lipiec
+**Commity:** fabf091
+
+Zrobione:
+- `src/krakbus/observed/chains.py`: jeden wiersz na kurs pojazdu w dobie (`chain_idx`), z następnym kursem pojazdu, zapasem rozkładowym na pętli, opóźnieniem na końcu kursu i na odjeździe następnego, flagami `follows_block`, `cross_route`, `carried`. Zapis `data/processed/chains/D.parquet`, odczyt `store.load_chains`.
+- Łańcuchy liczone w `build-events` razem ze zdarzeniami, na tym samym manifeście; odcisk obejmuje teraz też sekcję `chains` configu. `PIPELINE_VERSION` = 2.
+- Plan bloków (`blk_idx`, `block_next_trip`, `start_s`, `end_s`) w `ScheduleIndex.trip_plan`.
+- `events-quality` raportuje łańcuchy: zgodność z blokiem, `cross_route` per linia, reset X i przenoszenie OLS.
+
+Decyzje:
+- Łańcuch obserwowany (kolejność kursów pojazdu wg czasu), nie wzięty z `block_id` — pojazdy bywają podmieniane i zmieniają linię; plan bloku zostaje do porównania (`follows_block`). Odrzucone: łańcuch z bloku z dołączonym pojazdem (gubi podmiany i przejścia międzyliniowe, które są potrzebne do warunku brzegowego, decyzja 4).
+- Odjazd z pierwszego przystanku = **ostatni** epizod postoju z `dep_ok` (właściwy odjazd po czekaniu na pętli); przyjazd na koniec = pierwszy epizod na ostatnim przystanku z `arr_ok`.
+- `carried` = `arr_end_delay_s > layover_sched_s − l_min_s`, `l_min_s` = 60 s (najlepsze dopasowanie z sekcji 6 `week_analysis`); brak wartości, gdy brak opóźnienia albo następnego kursu.
+- Opóźnienia w łańcuchach surowe; filtr outlierów zostaje dla M1 B (jeden spójny filtr).
+- Dzień bez zdarzeń nie jest przeliczany w kółko (brak plików liczy się jako brak tylko, gdy manifest ma zdarzenia).
+
+Sprawdzone:
+- 8 dni roboczych (5–9.10, 12–14.10): ten sam pojazd na kolejnym kursie bloku 0,990 (sekcja 6: 0,991), reset X 0,84 (0,84), przenoszenie OLS 0,138 (0,13; różnica z wyboru epizodu na pierwszym przystanku). `follows_block` 0,982.
+- `cross_route` 5,3% przejść; większość linii 0–2,5%, 151: 17,5%.
+- 36 testów, ruff czysto; ponowne `build-events` nic nie przelicza, hash manifestu `87b84a4e18f73610`.
+
+Otwarte / dalej:
+- M1 B: flaga outlierów i klasa `wrong_service_day`.
+- Krzywa pochłaniania liczona z `chains/` (dziś w sekcji 6 `week_analysis`).
+- Ranking linii z udziałem `cross_route` pod tor N (`route_ranking.csv`).
+
 ## 2026-10-16 — przetwarzanie przyrostowe i pakiet `krakbus` (M1 A2, M2 A)
 
 **Kto:** Kacper Lipiec

@@ -59,7 +59,7 @@ Problem: logger zbiera dane ciągle, a nowe dane są wgrywane do `data/raw_A` co
 - [x] `week_analysis.py` czyta `events/` przez `krakbus.observed.store.load_events` (domyślnie dni `complete`, `DAYS=` wybiera ręcznie dowolne)
 - [x] Test zgodności z pełnym przeliczeniem z 16.10: 1 531 496 zdarzeń identycznych we wszystkich kolumnach poza `prev_ts`/`next_ts`/`arr_unc`/`dep_unc` w 310/224 zdarzeniach, gdzie poprzedni raport pojazdu jest sprzed > 25 h, czyli poza oknem (stara wartość ≥ 91 453 s, nowa NaN; flagi `arr_ok`/`dep_ok` bez zmian). Brakuje 14 zdarzeń: wszystkie z datą obsługi 16.10 (partycji 16.10 jeszcze nie ma), opóźnienia −4,5 h do −9 h, czyli artefakty `wrong_service_day`. `week_analysis` na nowym magazynie: kluczowe liczby zgodne do trzeciej cyfry (różnica: 15.10 jest teraz `provisional`)
 - [x] Test przyrostu: drugie uruchomienie bez nowych plików nic nie przelicza (< 1 s); dopisanie jednego pliku `part-*` przelicza tylko dni, których okno go zawiera; nowy właściciel kalendarza tylko dni sąsiednie (`tests/observed/test_manifest.py`). Pełne przeliczenie 12 dni: ~2,5 min
-- [ ] `build_chains` (C) i każdy kolejny artefakt per dzień używają tego samego manifestu
+- [x] `build_chains` (C) liczony w tym samym kroku i na tym samym manifeście (`chains/D.parquet`; brak któregokolwiek pliku dnia wymusza przeliczenie). Kolejne artefakty per dzień dopisywać tak samo (`store.KINDS`)
 
 ### B. Jakość zdarzeń
 
@@ -72,11 +72,13 @@ Problem: logger zbiera dane ciągle, a nowe dane są wgrywane do `data/raw_A` co
 
 ### C. Łańcuchy kursów (`vehicle_chains`)
 
-- [ ] Z `trips.block_id` + zdarzeń: dla (vehicle_id lub block_id, service_date) uporządkowana lista kursów
-- [ ] Kolumny minimum: kolejność, route_id, direction, trip_id, zaplanowany zapas pętli `L`, opóźnienie na końcu kursu, opóźnienie odjazdu następnego, czy przeniesienie (opóźnienie > zapas − ℓ_min)
-- [ ] Flaga `cross_route` (następny kurs w łańcuchu na innej linii) + udział takich przejść per linia — wejście do warunku brzegowego w jobach per linia (M3 D)
-- [ ] Krzywa pochłaniania: udział / wielkość resetu vs zapas (jak sekcja 6 raportu, ale na poprawionych opóźnieniach)
-- [ ] Sprawdzić, że `block_id` nadal ≈ zgodny z pojazdem (~99% w starym raporcie)
+Zrobione 16.10: `src/krakbus/observed/chains.py`, wynik `data/processed/chains/YYYY-MM-DD.parquet`, odczyt `krakbus.observed.store.load_chains`. Łańcuch jest **obserwowany** (kolejne kursy pojazdu w dobie wg czasu), plan bloku tylko do porównania — pojazdy bywają podmieniane i przechodzą między liniami.
+
+- [x] Dla (`vehicle_id`, `service_date`) uporządkowana lista kursów (`chain_idx`), z planem bloku (`block_id`, `blk_idx`, `block_next_trip`) i flagą `follows_block`
+- [x] Kolumny: `chain_idx`, `route_id`, `direction_id`, `trip_id`, `start_s`/`end_s` (rozkład), `first_ts`/`last_ts` (obserwacja), zapas rozkładowy `layover_sched_s` = start następnego − koniec tego, `gap_obs_s`, `arr_end_delay_s` (przyjazd na ostatni przystanek, `arr_ok`), `dep_first_delay_s` (ostatni odjazd z pierwszego, `dep_ok`), `next_dep_first_delay_s`, `carried` = `arr_end_delay_s > layover_sched_s − l_min_s` (`l_min_s` = 60 w `configs/config.yaml`)
+- [x] Flaga `cross_route` (następny kurs pojazdu na innej linii); udział per linia w `events-quality`. 5,3% przejść ogółem; dla większości linii 0–2,5%, ale np. 151 ma 17,5% — kandydaci na warunek brzegowy w M3 D
+- [ ] Krzywa pochłaniania z `chains/` zamiast z `week_analysis` (sekcja 6 liczy ją już na poprawionych zdarzeniach; przenieść, gdy powstanie moduł kalibracji pętli)
+- [x] `block_id` zgodny z pojazdem: 0,990 (8 dni roboczych, miara jak w sekcji 6; w starym raporcie 0,991). Ostrzejsza `follows_block` (następny zaobserwowany kurs = następny w bloku): 0,982. Reset X 0,84 i przenoszenie OLS 0,138 (sekcja 6: 0,84 i 0,13; różnica, bo odjazd z pierwszego przystanku to teraz ostatni epizod postoju, a nie pierwszy)
 
 ### D. Fakty stylizowane + tooling raportu
 
@@ -105,6 +107,7 @@ Problem: logger zbiera dane ciągle, a nowe dane są wgrywane do `data/raw_A` co
 | `src/krakbus/ingest/gtfs_versions.py` | łączenie wersji GTFS, kalendarz efektywny, data obsługi |
 | `src/krakbus/ingest/raw.py` | partycje loggera, okno D-1..D+1 |
 | `src/krakbus/observed/events.py`, `pipeline.py` | zdarzenia na rozkładzie per dzień, przyrostowo (A2) |
+| `src/krakbus/observed/chains.py` | łańcuchy kursów pojazdów per dzień (C) |
 | `src/krakbus/observed/days.py`, `manifest.py` | rejestr dni i odciski wejść |
 | `src/krakbus/observed/quality.py` | raport jakości (`events-quality`) |
 | `src/krakbus/observed/store.py` | `load_events()` dla analiz |

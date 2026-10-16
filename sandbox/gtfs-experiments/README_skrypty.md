@@ -33,6 +33,7 @@ Symulacja-sieci.../                <- katalog glowny repozytorium
       static/GTFS_KRK_A.sha256
     processed/
       events/YYYY-MM-DD.parquet    <- zdarzenia per data obslugi
+      chains/YYYY-MM-DD.parquet    <- lancuchy kursow pojazdow per data obslugi
       days.csv                     <- rejestr dni
       manifest.json                <- odciski wejsc kazdego dnia
       week_report/report.txt
@@ -88,14 +89,15 @@ uv run build-events --full      # wszystko od zera
 ```
 
 - Wejście: `data/raw_A/vehicle_positions`, wszystkie `data/raw_A/static/GTFS_KRK_A_*.zip`.
-- Wyjście: `data/processed/events/YYYY-MM-DD.parquet` (m.in. `service_date`, `service_id`, `gtfs_stamp`, `arr_delay_s`, `dep_delay_s`, `arr_ok`, `dep_ok`), `days.csv`, `manifest.json`. Zdarzenia bez daty obsługi (kurs spoza wszystkich wersji rozkładu albo usługa nieaktywna wczoraj, dziś i jutro) nie trafiają do żadnego dnia.
+- Wyjście: `data/processed/events/YYYY-MM-DD.parquet` (m.in. `service_date`, `service_id`, `gtfs_stamp`, `arr_delay_s`, `dep_delay_s`, `arr_ok`, `dep_ok`), `data/processed/chains/YYYY-MM-DD.parquet`, `days.csv`, `manifest.json`. Zdarzenia bez daty obsługi (kurs spoza wszystkich wersji rozkładu albo usługa nieaktywna wczoraj, dziś i jutro) nie trafiają do żadnego dnia.
+- Łańcuchy (`krakbus.observed.chains`): jeden wiersz na kurs pojazdu w dobie, w kolejności zaobserwowanej (`chain_idx`), z następnym kursem pojazdu, zapasem rozkładowym na pętli (`layover_sched_s`), opóźnieniem na końcu kursu (`arr_end_delay_s`) i na odjeździe następnego (`next_dep_first_delay_s`), flagami `follows_block` (następny kurs = następny w `block_id`), `cross_route` (następny kurs na innej linii) i `carried` (opóźnienie > zapas − `l_min_s`). Opóźnienia surowe, bez filtra outlierów.
 - Pełne przeliczenie 12 dni: ~2,5 min; uruchomienie bez nowych danych: < 1 s; jeden nowy plik `part-*` przelicza 2–3 dni.
 
-Do analiz: `from krakbus.observed.store import load_events` (domyślnie wszystkie dni `complete`).
+Do analiz: `from krakbus.observed.store import load_events, load_chains` (domyślnie wszystkie dni `complete`).
 
 ## events-quality (`krakbus.observed.quality`)
 
-Raport jakości wybranych dni (domyślnie 3 ostatnie `complete`, albo `--days ...`): rejestr dni, rozkład niepewności i opóźnień, odjazdy z pierwszego przystanku, pokrycie przystanków, udział powtórzonych pozycji, niezależna kontrola względem prognoz z TripUpdates, ekstremalne opóźnienia (|opóźnienie| > 6 h to kursy z innej doby, znany artefakt).
+Raport jakości wybranych dni (domyślnie 3 ostatnie `complete`, albo `--days ...`): rejestr dni, rozkład niepewności i opóźnień, odjazdy z pierwszego przystanku, pokrycie przystanków, udział powtórzonych pozycji, niezależna kontrola względem prognoz z TripUpdates, łańcuchy (zgodność z `block_id`, udział `cross_route` per linia, reset X i przenoszenie na pętli z tymi samymi filtrami co sekcja 6 `week_analysis`), ekstremalne opóźnienia (|opóźnienie| > 6 h to kursy z innej doby, znany artefakt).
 
 ## gtfs_versions (`krakbus.ingest.gtfs_versions`)
 

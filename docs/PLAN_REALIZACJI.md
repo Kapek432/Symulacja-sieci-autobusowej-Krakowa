@@ -131,7 +131,7 @@ Pełne checklisty: [`milestones/`](milestones/README.md).
 
 - [x] **M1 / P0:** match GTFS do dnia + przeliczenie events (wszystkie linie w parquet) — `gtfs_versions.py`, testy w `tests/`
 - [x] **M1 / P0:** `build-events` przyrostowo per dzień + `manifest.json` + `days.csv` (M1 A2), szkielet `src/krakbus/` (M2 A)
-- [ ] **M1 / P0:** `vehicle_chains` per dzień z flagą `cross_route` (M1 C)
+- [x] **M1 / P0:** `vehicle_chains` per dzień z flagą `cross_route` (M1 C)
 - [ ] Stałe: logger + sync + backup (rutyna w M0)
 - [ ] Wpisać osoby odpowiedzialne za tory (tabela wyżej)
 - [ ] **M2:** silnik 179 **oraz** graf/łańcuchy całego miasta w loaderze; decyzja o strukturze przestrzennej `u`
@@ -169,6 +169,7 @@ Pełne checklisty: [`milestones/`](milestones/README.md).
 - Pipeline events/raport działa na wszystkich liniach (`gtfs_versions.py` + testy).
 - **Przetwarzanie przyrostowe działa** (16.10, M1 A2): `uv run build-events` w pakiecie `src/krakbus/`, wynik zgodny z pełnym przeliczeniem. W `days.csv`: 10 dni `complete` (5–14.10), 4.10 `gap` (start loggera), 15.10 `provisional` (dane kończą się 16.10 o 00:06, brak kursów nocnych; przejdzie w `complete` po kolejnym wgraniu). Raport `week_analysis` liczy więc teraz 8 pełnych dni roboczych zamiast 9; kluczowe liczby bez zmian do trzeciej cyfry.
 - **Zmiana względem planu z 14.10:** docelowo **cała sieć + kalibracja per linia**, bez ucinania Unity/scenariuszy; dodany tor **N** i wyższa gęstość zadań; decyzje metodologiczne 2–6 (leave-line-out, `u` z korytarza, łańcuchy międzyliniowe, struktura przestrzenna `u`, szybka ścieżka).
-- Najpilniejsze w M1: `vehicle_chains` (z `cross_route`) w tym samym układzie per dzień, flaga outlierów, split dni.
+- **Łańcuchy kursów** (16.10, M1 C): `data/processed/chains/`, łańcuch obserwowany per pojazd; `block_id` zgodny z pojazdem w 99%, przejścia na inną linię 5,3% (większość linii 0–2,5%, 151: 17,5%).
+- Najpilniejsze w M1: flaga outlierów i `wrong_service_day` (B), ranking linii pod tor N, split dni.
 
 Szczegóły liczb — `data/processed/week_report/report.txt`.
