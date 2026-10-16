@@ -33,6 +33,8 @@ Udowodnić wartość modelu poza dopasowaniem S; domknąć **korytarz**; **domkn
 - [ ] RMSE, KS, korelacje kolejnych kursów; bootstrap → CI
 - [ ] Weekendy jako reżim dodatkowy (jeśli dane są)
 - [ ] Dni specjalne (z `special_days.yaml`) raportowane osobno, nie w średniej OOS
+- [ ] Walidacja out-of-time: dni `complete`, które przyszły po zamrożeniu podziału w M3 (rola `valid` z automatu), raportowane osobno od dni walidacyjnych wybranych przed kalibracją; tabela odświeżana po każdym wgraniu bez ponownej kalibracji
+- [ ] Każda tabela walidacyjna ma migawkę danych (lista dni + hash `manifest.json`)
 
 ### B. Walidacja przestrzenna (linie OOS) — leave-line-out
 

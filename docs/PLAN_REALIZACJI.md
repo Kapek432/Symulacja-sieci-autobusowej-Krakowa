@@ -21,7 +21,7 @@ Dokument roboczy zespołu (3 osoby). Opis tematu dla prowadzącego jest w `TEMAT
 
 **Oś czasu:** kamienie milowe z datą „najpóźniej do”. Wcześniej = lepiej.
 
-**Dane:** logger GTFS-RT działa **ciągle na osobnym komputerze**. Sync `data/raw_A` + kopia na inny dysk. Surowych danych nie commitować publicznie.
+**Dane:** logger GTFS-RT działa **ciągle na osobnym komputerze**, nowe dane są wgrywane do `data/raw_A` co jakiś czas (do końca projektu). Sync `data/raw_A` + kopia na inny dysk. Pipeline przetwarza je przyrostowo, a kalibracja pracuje na zamrożonej liście dni (decyzja 8). Surowych danych nie commitować publicznie.
 
 **Unity:** tor równoległy od M2; **Unity MCP**. Symulacja w Pythonie; Unity odtwarza eksport.
 
@@ -77,7 +77,7 @@ fakty + kalendarz ──────────► calib API + u korytarza (M3)
 eksport ◄── wyniki ─────────────────────────────────────────────────────► Unity replay
 ```
 
-1. **D** — sync, jakość, events dla całej sieci (nie tylko 179), kalendarz dni specjalnych.
+1. **D** — sync, przetwarzanie przyrostowe i rejestr dni, jakość, events dla całej sieci (nie tylko 179), kalendarz dni specjalnych.
 2. **M** — mechanika, kalibracja, walidacja, scenariusze.
 3. **N** — scale-out: kolejka linii, joby, wydajność doby city-wide, coverage report.
 4. **U** — Unity MCP; nie kasujemy przy obciążeniu N — idzie równolegle na eksporcie.
@@ -95,6 +95,12 @@ Dotyczą kilku kamieni naraz; szczegóły w checklistach.
 5. **Struktura przestrzenna `u` w skali miasta.** Do decyzji w M2 (przed S2 na sieci): niezależne pola `u` na odcinkach vs korelacja między sąsiednimi odcinkami / w obrębie korytarza ulicznego. Bez tego „fala” rozchodzi się tylko przez dosłownie wspólne odcinki. Decyzję i jej uzasadnienie z danych (korelacja residuów na odcinkach sąsiednich vs odległych) zapisać w configu i w raporcie.
 6. **Szybka ścieżka obliczeń.** Przy γ=0 pojazdy są niezależne poza łańcuchem i polem `u`, więc dobę można liczyć zwektoryzowaną rekursją (numpy) zamiast pełnego SimPy. Używamy jej w jobach kalibracyjnych; SimPy zostaje silnikiem referencyjnym (walidacja, scenariusze, γ>0). Test równoważności (te same seedy → te same opóźnienia) jest warunkiem użycia.
 7. **Kalendarz dni.** Do kalibracji/walidacji tylko pełne dni robocze. Jawna lista dni specjalnych w configu: zmiana czasu 25.10 (nd), 1.11 (nd, Wszystkich Świętych) i dni okołoświąteczne 31.10/2.11, 11.11 (śr, Święto Niepodległości) i 10.11/12.11 do sprawdzenia, okres przedświąteczny w grudniu. Split dni kalibracja/walidacja zbalansowany względem wersji rozkładu (zmiany 5.10, 10.10, 13.10, kolejne wg loggera).
+8. **Ciągły napływ danych.** Dane przybywają do końca projektu, więc:
+   - **Przetwarzanie przyrostowe:** wyniki zapisywane osobno dla każdej daty obsługi (`data/processed/events/service_date=D/`), dzień D liczony z okna surowych partycji D-1..D+1 (partycje loggera są w UTC, kursy nocne jadą po północy). `manifest.json` trzyma odcisk wejść każdego dnia; wgranie przelicza tylko dni ze zmienionym odciskiem, nowa wersja GTFS tylko dni ze zmienionym właścicielem kalendarza, `--full` wszystko. Pamięć i czas zależą od liczby nowych dni, nie od wszystkich zebranych.
+   - **Rejestr dni `days.csv`** ze statusem `complete` / `provisional` / `gap` / `special`. Do analiz, kalibracji i walidacji wchodzą tylko dni `complete`. Ostatni dzień wgrania jest zawsze `provisional` i dolicza się przy kolejnym wgraniu.
+   - **Zamrożony podział dni:** do M3 rola dnia (`calib` / `valid` / `excluded`) jest propozycją; przy starcie kalibracji w M3 lista dni kalibracyjnych zostaje zamrożona w `configs/days_split.yaml`. Każdy dzień `complete`, który przyjdzie później, automatycznie dostaje rolę `valid` — to dodatkowa walidacja na dniach z przyszłości (out-of-time), a nie powód do ponownej kalibracji.
+   - **Migawka danych przy wynikach:** każdy artefakt kalibracji, walidacji i scenariuszy zapisuje listę użytych dni i hash `manifest.json`. Nowe dane nigdy nie zmieniają po cichu już policzonego wyniku; ponowna kalibracja na większej liczbie dni to świadoma decyzja z nową migawką.
+   - **Rutyna po wgraniu:** kopiowanie nowych plików, `build_events` (przyrostowo), raport — konkretne polecenia w [M0](milestones/M0_fundament.md).
 
 ---
 
@@ -122,7 +128,8 @@ docs/
 Pełne checklisty: [`milestones/`](milestones/README.md).
 
 - [x] **M1 / P0:** match GTFS do dnia + przeliczenie events (wszystkie linie w parquet) — `gtfs_versions.py`, testy w `tests/`
-- [ ] Stałe: logger + sync + backup
+- [ ] **M1 / P0:** `build_events` przyrostowo per dzień + `manifest.json` + `days.csv` (M1 A2) — przed `vehicle_chains`
+- [ ] Stałe: logger + sync + backup (rutyna w M0)
 - [ ] Wpisać osoby odpowiedzialne za tory (tabela wyżej)
 - [ ] **M2:** silnik 179 **oraz** graf/łańcuchy całego miasta w loaderze; decyzja o strukturze przestrzennej `u`
 - [ ] **M3/N:** API kalibracji per `route_id` + kolejka batchy; `u` na korytarzu; zamrożone prognozy leave-line-out
@@ -142,6 +149,9 @@ Pełne checklisty: [`milestones/`](milestones/README.md).
 | Kalibracja per linia nie mieści się w czasie | kolejka stoi | więcej równoległych jobów, ciepły start z sąsiednich linii, hierarchia (global → grupa → route), **nie** redukcja do „tylko korytarz” |
 | Linie z małą liczbą zdarzeń | niestabilne S | reguły minimum n + pooling części parametrów z grupą; i tak osobny rekord per linia |
 | Dni specjalne w próbie | zawyżony `e_d`, fałszywe efekty | lista dni specjalnych w configu (decyzja 7) |
+| Czas i pamięć przeliczenia rosną z liczbą dni | pełne przeliczenie ~1 h i kilkanaście GB przy końcu zbierania | przetwarzanie przyrostowe per dzień z manifestem (decyzja 8, M1 A2) |
+| Nowe dane zmieniają wyniki po cichu | inna kalibracja / walidacja przy każdym wgraniu, niepowtarzalne liczby w raporcie | zamrożony podział dni + migawka danych przy każdym wyniku (decyzja 8) |
+| Niepełny ostatni dzień w analizach | sztuczna dziura wieczorem, zaniżone liczby | status `provisional` w `days.csv`, do analiz tylko `complete` |
 | Unity vs sieć | konflikt czasu | oba tory; eksport city-wide może być downsamplowany do viz |
 | Święta / M7 | raport | draft jako zadanie w M4; M6 twardo 20.12 |
 
@@ -155,6 +165,6 @@ Pełne checklisty: [`milestones/`](milestones/README.md).
 - Fakty stylizowane z TEMAT potwierdzone na 9 dniach: KS między dniami roboczymi ≤ 0,10 (pooling uzasadniony), dryf mediany 59 → 205 s wzdłuż trasy, reset na pętli ~84%, γ z efektami stałymi ≈ 0, brak zbijania (obserwacja / model zerowy 0,68), korytarz 179: 124, 144, 169, 173, 174, 608.
 - Pipeline events/raport działa na wszystkich liniach (`gtfs_versions.py` + testy).
 - **Zmiana względem planu z 14.10:** docelowo **cała sieć + kalibracja per linia**, bez ucinania Unity/scenariuszy; dodany tor **N** i wyższa gęstość zadań; decyzje metodologiczne 2–6 (leave-line-out, `u` z korytarza, łańcuchy międzyliniowe, struktura przestrzenna `u`, szybka ścieżka).
-- Najpilniejsze w M1: `vehicle_chains` (z `cross_route`), flaga outlierów, lista dni specjalnych, split dni.
+- Najpilniejsze w M1: przetwarzanie przyrostowe (A2), potem `vehicle_chains` (z `cross_route`), flaga outlierów, lista dni specjalnych, split dni.
 
 Szczegóły liczb — `data/processed/week_report/report.txt`.

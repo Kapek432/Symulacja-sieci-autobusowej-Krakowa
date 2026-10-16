@@ -29,7 +29,9 @@ Dopasować parametry na pilocie **i wspólne `u` na korytarzu** (i domknąć met
 
 ### A. Split i wektor S
 
-- [ ] Ustawić dni kalibracji vs walidacji (zapisane w YAML; nie tylko w głowie), zbalansowane względem wersji rozkładu; dni specjalne poza próbą
+- [ ] Ustawić dni kalibracji vs walidacji (zapisane w YAML; nie tylko w głowie), zbalansowane względem wersji rozkładu; dni specjalne poza próbą; tylko dni ze statusem `complete` w `days.csv`
+- [ ] **Zamrozić listę dni kalibracyjnych** w `configs/days_split.yaml` (data zamrożenia + hash `manifest.json`) przy starcie pierwszego runu kalibracji. Reguła dla dni, które przyjdą później: każdy nowy dzień `complete` dostaje automatycznie rolę `valid` (walidacja out-of-time), nigdy `calib`
+- [ ] Każdy artefakt kalibracji zapisuje migawkę danych: listę użytych dni i hash `manifest.json`. Ponowna kalibracja na większej liczbie dni = świadoma decyzja z nową migawką, opisana w raporcie
 - [ ] Zaimplementować funkcję `summarize(events) → S` wspólną dla obs i sim
 - [ ] Składowe S (minimum):
   - kwantyle przyrostu opóźnienia na odcinkach (np. po okresie dnia)
@@ -87,6 +89,7 @@ Na samym 179 `u` zlewa się z `a` i `η` — wyróżnia je korelacja między lin
 ## Definition of Done
 
 - Parametry 179 (γ=0) odtwarzają S na dniach kalibracyjnych w akceptowalnym d; jest wariant γ>0.
+- Lista dni kalibracyjnych zamrożona w `configs/days_split.yaml`, artefakty mają migawkę danych.
 - `u` skalibrowane wspólnie na korytarzu i zamrożone w `global.yaml`.
 - Morris (+ komentarz identyfikowalności).
 - Istnieje **powtarzalny** job per `route_id` (nie tylko notebook „dla 179”) z warunkiem brzegowym dla łańcuchów międzyliniowych.
@@ -98,6 +101,7 @@ Na samym 179 `u` zlewa się z `a` i `η` — wyróżnia je korelacja między lin
 - Kalibracja na slope σ_e = brak niezależnej walidacji później.
 - Za bogaty wektor a_{p,s} na każdy odcinek → overfitting; grupy (okres × typ odcinka).
 - Nie ruszać dni walidacyjnych „żeby poprawić fit”.
+- Nie dokładać nowych dni do kalibracji przy każdym wgraniu — wyniki przestają być porównywalne i powtarzalne.
 - Nie odkładać API per-route „na M6” — wtedy nie zdążycie city-wide.
 - Kalibracja linii walidacyjnej przed zamrożeniem leave-line-out = utrata walidacji przestrzennej z TEMAT.
 - `u` z jednej linii przeniesione na miasto = zakłócenia wspólne niezidentyfikowane, a korelacje między liniami w sim przypadkowe.

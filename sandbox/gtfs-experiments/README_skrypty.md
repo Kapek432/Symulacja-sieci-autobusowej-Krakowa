@@ -31,7 +31,7 @@ Logger działa na osobnym komputerze (`C:\gtfs`, zadanie ZTP-logger). Do analizy
 ## Kolejność uruchamiania
 
 1. `logger_autobusy.py` - ciągle, zbiera dane.
-2. `build_events.py` - po każdym dociągnięciu nowych danych (przelicza zdarzenia od zera).
+2. `build_events.py` - po każdym dociągnięciu nowych danych. Obecnie przelicza zdarzenia od zera; planowane przetwarzanie przyrostowe per dzień z `manifest.json` i `days.csv` opisuje `docs/milestones/M1_dane.md` (sekcja A2), a rutynę po wgraniu `docs/milestones/M0_fundament.md`.
 3. `week_analysis.py` - po `build_events.py`, generuje pełny raport.
 
 ```

@@ -20,13 +20,23 @@ Utrzymać zbieranie danych i mieć wspólny punkt odniesienia: temat, skrypty, p
 
 ## Stałe obowiązki (cały projekt)
 
-Kolejność w praktyce po każdym „sejwie” z maszyny loggera:
+### Rutyna po każdym wgraniu danych z maszyny loggera
 
-1. [ ] Skopiować `data/raw_A` (vehicle_positions, trip_updates, static) na maszynę roboczą
-2. [ ] Kopia zapasowa tego samego zestawu na **inny dysk**
-3. [ ] Sprawdzić dziury: odstępy `fetched_at` > ~120 s w godzinach ruchu (albo sekcja 1 `week_analysis`); w wydruku `build_events` tabela „zdarzenia dzień po dniu” — kolumny `wg_daty_obslugi` i `wg_daty_lokalnej` powinny mieć ten sam rząd wielkości, a `bez_daty_obslugi` bliskie zera
-4. [ ] Jeśli dziura w dzień roboczy: zanotować datę/godziny (przydaje się przy wyłączaniu dni z kalibracji)
-5. [ ] Nie commitować surowego `raw_A` do publicznego repo (`.gitignore`)
+Dane z loggera tylko przybywają (nowe pliki `part-*` co ~10 min, nowe wersje GTFS w `static/`), więc kopiujemy wyłącznie nowe pliki i niczego nie nadpisujemy. Zasady przetwarzania: decyzja 8 w [`PLAN_REALIZACJI.md`](../PLAN_REALIZACJI.md).
+
+1. [ ] Skopiować nowe pliki `data/raw_A` (vehicle_positions, trip_updates, static) z `C:\gtfs\data\raw_A` na maszynę roboczą, bez usuwania istniejących:
+
+   ```
+   rsync -av --ignore-existing <źródło>/raw_A/ data/raw_A/
+   ```
+
+   `<źródło>` zależy od sposobu przenoszenia (dysk sieciowy, pendrive, SSH) — wpisać tu konkretną ścieżkę, gdy będzie ustalona. Uwaga: ostatni, jeszcze dopisywany plik `part-*` może być niepełny; `--ignore-existing` go potem nie zaktualizuje, więc przy kolejnym wgraniu kopiować bez tej flagi albo z `--size-only`.
+2. [ ] Kopia zapasowa tego samego zestawu na **inny dysk** (ta sama komenda, inny cel)
+3. [ ] Przeliczyć przyrostowo: `uv run sandbox/gtfs-experiments/build_events.py` (tylko zmienione dni; `--full` tylko po zmianie logiki). Do czasu wdrożenia M1 A2 skrypt liczy wszystko od zera
+4. [ ] Przejrzeć wydruk `build_events`: które dni przeliczono, które zmieniły status (`provisional` → `complete`), tabela „zdarzenia dzień po dniu” (`wg_daty_obslugi` i `wg_daty_lokalnej` w tym samym rzędzie wielkości, `bez_daty_obslugi` bliskie zera)
+5. [ ] Raport: `uv run sandbox/gtfs-experiments/week_analysis.py 179` (domyślnie tylko dni `complete`)
+6. [ ] Jeśli dziura w dzień roboczy: status `gap` w `days.csv` ustawia się sam; dopisać przyczynę, jeśli znana (restart, awaria sieci)
+7. [ ] Nie commitować surowego `raw_A` ani `data/processed/` do publicznego repo (`.gitignore`)
 
 Logger:
 
@@ -39,12 +49,14 @@ Logger:
 |---------|---------|
 | Feed ZTP na PC loggera | Przyrost `data/raw_A/…/date=YYYY-MM-DD/` |
 | Sync na laptopie | Lokalna kopia do `build_events` / analiz |
+| `build_events` przyrostowo | `data/processed/events/service_date=D/`, `days.csv`, `manifest.json` |
 
 ## Definition of Done (część ciągła)
 
 - Nowe dni pojawiają się regularnie na maszynie roboczej.
 - Jest przynajmniej jedna aktualna kopia zapasowa poza dyskiem loggera.
-- Zespół wie, które dni są dziurawe.
+- Zespół wie, które dni są dziurawe (`days.csv`, status `gap`).
+- Każde wgranie kończy się przeliczeniem przyrostowym i aktualnym `days.csv`.
 
 ## Notatki
 
