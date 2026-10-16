@@ -40,8 +40,10 @@ unity/[Uu]ser[Ss]ettings/
 unity/*.csproj
 unity/*.sln
 unity/*.slnx
-unity/Assets/StreamingAssets/data/
-unity/Assets/StreamingAssets/data.meta
+unity/Assets/StreamingAssets/data/*
+!unity/Assets/StreamingAssets/data/network.json*
+!unity/Assets/StreamingAssets/data/obs_peak30.jsonl*
+!unity/Assets/StreamingAssets/data/obs_peak30.meta.json*
 
 # Unity: captures
 unity/Captures/
