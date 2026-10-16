@@ -42,3 +42,6 @@ unity/*.sln
 unity/*.slnx
 unity/Assets/StreamingAssets/data/
 unity/Assets/StreamingAssets/data.meta
+
+# Unity: captures
+unity/Captures/

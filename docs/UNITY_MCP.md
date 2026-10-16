@@ -27,3 +27,25 @@ Unity must be open for the server to respond. After switching to a git branch wi
 
 - Model logic does not go into C#. Unity reads export files (contract in [../src/viz/EXPORT.md](../src/viz/EXPORT.md), `schema_version: 1`).
 - Large assets (geoportal buildings, full exports) stay out of git; the repo holds only the project, scripts and small samples in `data/processed/unity_samples/`.
+
+## Replay v1: uruchomienie
+
+Odtwarzanie pozycji GPS autobusow (obs) na grafie sieci. Python przygotowuje pliki, Unity tylko je czyta. Katalog `data/` nie jest w gicie, wiec kazdy generuje pliki lokalnie.
+
+1. **Pozycje** (skrypt wymaga `data/raw_A/vehicle_positions`; `--out` to rdzen nazwy bez rozszerzenia; okno 30 min szczytu, 14.10.2026):
+   ```
+   uv run src/viz/export_unity.py --from 2026-10-14T07:30 --to 2026-10-14T08:00 --out data/processed/unity_samples/obs_peak30
+   ```
+   Powstaja `obs_peak30.jsonl` i `obs_peak30.meta.json` (537 pojazdow).
+2. **Siec** (przystanki i lamane tras; GTFS i linie bierze z meta pozycji, ok. 19 s):
+   ```
+   uv run export-network --positions data/processed/unity_samples/obs_peak30.meta.json
+   ```
+   Powstaje `data/processed/unity_samples/network.json` (ok. 0,9 MB).
+3. **Kopiowanie** trzech plikow (`network.json`, `obs_peak30.jsonl`, `obs_peak30.meta.json`) do `unity/Assets/StreamingAssets/data/` (katalog jest w `.gitignore`).
+4. **Unity:** otworz scene `BusReplay`, Play. Wczytanie ok. 2,6 s; kilka sekund po starcie widac ok. 500 autobusow. Przy brakujacym pliku na ekranie pojawia sie komunikat z oczekiwana sciezka.
+
+Sterowanie kamera: lewy przycisk (przeciaganie) albo WASD = przesuw, kolko = zoom (150–25000 m), prawy przycisk (przeciaganie) = obrot. Klik w autobus otwiera panel z danymi. Nazwy przystankow pojawiaja sie ponizej 1500 m wysokosci kamery. Domyslnie predkosc x10, odtwarzanie w petli; kolor wg opoznienia (zielony -> zolty -> czerwony, niebieski = przed czasem, szary = brak danych).
+
+Testy: Python `uv run pytest`; Unity EditMode przez Window > General > Test Runner albo MCP `run_tests` (27 testow).
+

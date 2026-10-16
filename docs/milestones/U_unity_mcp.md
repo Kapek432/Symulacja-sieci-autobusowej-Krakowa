@@ -34,18 +34,18 @@ Wspólny schemat (Parquet lub JSON Lines), np.:
 
 ### Faza 1 — scena i smoke (‖ M2)
 
-- [ ] Projekt Unity w repo (albo podkatalog uzgodniony; duże Library/ w gitignore)
-- [ ] Przez Unity MCP: pusta scena + obiekt „Bus” + kamera
-- [ ] Loader pliku eksportu (Editor play mode / runtime)
-- [ ] Pojazd jedzie po polyline trasy 179 (z shapes lub uproszczonych punktów)
-- [ ] Kolor / materiał zależny od `delay_s`
-- [ ] Smoke-test: załadowanie sample → 1 autobus się rusza
+- [x] Projekt Unity w repo (albo podkatalog uzgodniony; duże Library/ w gitignore)
+- [x] Przez Unity MCP: pusta scena + obiekt „Bus” + kamera
+- [x] Loader pliku eksportu (Editor play mode / runtime)
+- [x] Pojazd jedzie po polyline trasy 179 (z shapes lub uproszczonych punktów) — v1 jedzie po pozycjach GPS na grafie sieci (`network.json`); jazda po łamanych to kolejny krok
+- [x] Kolor / materiał zależny od `delay_s`
+- [x] Smoke-test: załadowanie sample → 1 autobus się rusza
 
 ### Faza 2 — replay dnia (‖ M3–M4)
 
-- [ ] Wiele pojazdów naraz
+- [x] Wiele pojazdów naraz — 537 pojazdów, ok. 508 widocznych (replay v1, 16.10)
 - [ ] Suwak czasu / przyspieszenie (×10, ×60)
-- [ ] Etykieta czasu symulacji
+- [x] Etykieta czasu symulacji
 - [ ] Podmiana sample → pełny eksport z DES
 
 ### Faza 3 — rzeczywistość ‖ symulacja (‖ M4–M5)
