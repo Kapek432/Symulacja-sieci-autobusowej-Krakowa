@@ -45,7 +45,7 @@ Decyzje:
 - `TEMAT.md` bez zmian: rozszerzenie γ mieści się w jego opisie sprzężenia od odstępu.
 
 Sprawdzone:
-- Dane pozwalają na filar A: zdarzenia mają `arr_ts` i `dep_ts`, więc obserwowany postój istnieje, choć rozkładowy wynosi 0. Filar C: 101 bloków międzyliniowych w dniu roboczym (M1 C). Filar B: szybka ścieżka liczy dobę city w 0,015 s, więc gęsty skan jest tani.
+- Dane pozwalają na filar A: zdarzenia mają `arr_ts` i `dep_ts`, więc obserwowany postój istnieje, choć rozkładowy wynosi 0. Filar C: 101 bloków międzyliniowych w dniu roboczym (M1 C). Filar B: sam silnik szybkiej ścieżki liczy dobę city w 0,015 s, więc gęsty skan jest tani, o ile sieć dnia wczytuje się raz na partię (dziś ok. 16 s na komendę).
 
 Otwarte / dalej:
 - Kryteria prowadzącego co do „systemu złożonego” — zestawić z decyzją 9, gdy będą.
