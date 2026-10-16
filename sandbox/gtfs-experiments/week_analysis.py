@@ -134,7 +134,9 @@ try:
     SCHED = load_schedule(DATA / "static")
 except FileNotFoundError as e:
     sys.exit(str(e))
-print("wersje rozkladu (rozklad kursu po trip_id, kalendarz dnia z najnowszej wersji, ktora go obejmuje):")
+print(
+    "wersje rozkladu (rozklad kursu po trip_id, kalendarz dnia z najnowszej wersji, ktora go obejmuje):"
+)
 for v_ in SCHED.versions:
     print("  ", v_)
 trips = SCHED.trips
@@ -473,7 +475,10 @@ def s3():
     }
     wk = [d for d in WORK if len(smp[d])]
     if len(wk) < len(WORK):
-        print("dni robocze bez dobrych zdarzen (pominiete w KS):", sorted(set(WORK) - set(wk)))
+        print(
+            "dni robocze bez dobrych zdarzen (pominiete w KS):",
+            sorted(set(WORK) - set(wk)),
+        )
     ks = pd.DataFrame({a: {b: ks_stat(smp[a], smp[b]) for b in wk} for a in wk})
     print(ks.round(3).to_string())
     KEY["KS_max_miedzy_dniami_roboczymi"] = (
