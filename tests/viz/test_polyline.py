@@ -1,5 +1,7 @@
 """Testy geometrii lamanej: rzutowanie przystankow, ciecie, upraszczanie."""
 
+import math
+
 import numpy as np
 import pytest
 
@@ -24,8 +26,10 @@ def test_project_out_and_back_same_street():
 
 def test_project_monotonic_when_best_is_behind():
     # przystanek 2 lezy blizej poczatku niz rzut przystanku 1 -> nie cofamy sie
-    s, _ = project_stops(L, np.array([[80, 0], [60, 3]], float))
+    s, d = project_stops(L, np.array([[80, 0], [60, 3]], float))
     assert s[1] >= s[0]
+    assert s[1] == pytest.approx(80)
+    assert d[1] == pytest.approx(math.hypot(20, 3))
 
 
 def test_cut_endpoints_and_inner_vertex():
@@ -51,3 +55,28 @@ def test_simplify_keeps_ends_and_tolerance():
     assert out[-1].tolist() == [100, 100]
     assert [50, 1] not in out.tolist()
     assert [100, 0] in out.tolist()
+
+
+def test_project_repeated_points_do_not_crowd_out_second_pass():
+    # powtorzone punkty ksztaltu (jak w GTFS) nie moga zajac wszystkich kandydatow
+    line = np.array(
+        [[0, 0]] + [[100, 0]] * 7 + [[200, 0]] + [[200, 8]] * 6 + [[0, 8]], float
+    )
+    # drugi przystanek lezy tak samo blisko obu przejazdow; po s=190 wolno tylko powrot
+    stops = np.array([[190, 0], [100, 4]], float)
+    s, _ = project_stops(line, stops)
+    assert s == pytest.approx([190, 308])
+    stops = np.array([[50, 1], [150, 1], [150, 7], [50, 7]], float)
+    s, _ = project_stops(line, stops)
+    assert s == pytest.approx([50, 150, 258, 358])
+
+
+def test_project_stop_exactly_at_vertex():
+    s, d = project_stops(L, np.array([[100, 0]], float))
+    assert s == pytest.approx([100])
+    assert d == pytest.approx([0])
+
+
+def test_project_line_too_short_raises():
+    with pytest.raises(ValueError):
+        project_stops(np.array([[0, 0]], float), np.array([[1, 1]], float))

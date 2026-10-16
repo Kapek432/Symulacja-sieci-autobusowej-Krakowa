@@ -3,6 +3,7 @@
 import numpy as np
 
 MAX_CANDIDATES = 5
+S_EPS = 1e-6
 
 
 def _cumulative(line: np.ndarray) -> np.ndarray:
@@ -34,8 +35,15 @@ def _candidates(line: np.ndarray, cum: np.ndarray, stop: np.ndarray) -> list[tup
     left = np.concatenate([[np.inf], dist[:-1]])
     right = np.concatenate([dist[1:], [np.inf]])
     idx = np.flatnonzero((dist <= left) & (dist <= right))
-    idx = idx[np.argsort(dist[idx], kind="stable")][:MAX_CANDIDATES]
-    return [(float(s[i]), float(dist[i])) for i in idx]
+    idx = idx[np.argsort(dist[idx], kind="stable")]
+    out: list[tuple[float, float]] = []
+    for i in idx:
+        if any(abs(float(s[i]) - o_s) < S_EPS for o_s, _ in out):
+            continue  # plateau / powtorzone punkty: ten sam rzut
+        out.append((float(s[i]), float(dist[i])))
+        if len(out) == MAX_CANDIDATES:
+            break
+    return out
 
 
 def project_stops(line: np.ndarray, stops: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
@@ -57,6 +65,8 @@ def project_stops(line: np.ndarray, stops: np.ndarray) -> tuple[np.ndarray, np.n
     """
     line = np.asarray(line, float)
     stops = np.asarray(stops, float)
+    if len(line) < 2:
+        raise ValueError("Lamana musi miec co najmniej 2 punkty")
     k = len(stops)
     if k == 0:
         return np.empty(0), np.empty(0)
@@ -68,8 +78,12 @@ def project_stops(line: np.ndarray, stops: np.ndarray) -> tuple[np.ndarray, np.n
     for j in range(1, k):
         cands = _candidates(line, cum, stops[j])
         prev = layers[j - 1]
+        subs: list[float] = []
         for p_s, _ in prev:
-            if not any(c_s >= p_s for c_s, _ in cands):
+            if not any(c_s >= p_s for c_s, _ in cands) and not any(
+                abs(p_s - q) < S_EPS for q in subs
+            ):
+                subs.append(p_s)
                 d = float(np.hypot(*(stops[j] - _point_at(line, cum, p_s))))
                 cands.append((p_s, d))
         cur_cost: list[float] = []
