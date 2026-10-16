@@ -11,13 +11,13 @@ Opóźnienia i łańcuchy kursów liczone z **właściwą wersją rozkładu na d
 ## Wejście
 
 - `data/raw_A/vehicle_positions/`, `trip_updates/`, `static/GTFS_KRK_A_*.zip`
-- `sandbox/gtfs-experiments/build_events.py`, `week_analysis.py`
+- `uv run build-events` / `uv run events-quality` (`src/krakbus/observed/`), `sandbox/gtfs-experiments/week_analysis.py`
 - Raport: `data/processed/week_report/report.txt`
 
 ## Wyjście
 
-- `data/processed/events/service_date=YYYY-MM-DD/part.parquet` — zdarzenia per data obsługi, z `gtfs_stamp` (zastępuje jeden plik `observed_events.parquet`, patrz A2)
-- `data/processed/chains/service_date=YYYY-MM-DD/part.parquet` — łańcuchy kursów w tym samym schemacie partycji
+- `data/processed/events/YYYY-MM-DD.parquet` — zdarzenia per data obsługi, z `gtfs_stamp` (zastąpiły jeden plik `observed_events.parquet`, patrz A2)
+- `data/processed/chains/YYYY-MM-DD.parquet` — łańcuchy kursów w tym samym układzie (jeden plik na dzień)
 - `data/processed/days.csv` — rejestr dni: status, rola, liczby kontrolne
 - `data/processed/manifest.json` — odciski wejść każdego dnia (co przeliczać przy kolejnym wgraniu)
 - Odświeżony `week_report/` z wykresami
@@ -40,25 +40,25 @@ Struktura feedu ZTP (sprawdzone na 4 wersjach): feed kroczący, `service_id`/`tr
 - [x] Zapis w zdarzeniach: kolumny `gtfs_stamp` i `service_id`
 - [x] Przeliczyć `observed_events` od zera
 - [x] Smoke: wydruk `build_events` „zdarzenia dzień po dniu” (data obsługi vs data lokalna, zdarzenia bez daty, wersja kalendarza); sekcja 2 `week_analysis` z sensownym udziałem dla 5–9.10
-- [x] Zmiana czasu 25.10: czasy GTFS liczone od „południe − 12 h” (doba 25 h nie przesuwa opóźnień); test w `tests/test_gtfs_versions.py`. Dobę 25.10 i tak oznaczyć jako specjalną (patrz D)
-- [ ] Po pierwszym sync po 25.10: sprawdzić w wydruku `build_events`, że 25–26.10 nie mają skoku zdarzeń bez daty
-- [ ] Przenieść `gtfs_versions.py` do `src/ingest/` przy szkielecie repo (M2 A)
+- [x] Zmiana czasu 25.10: czasy GTFS liczone od „południe − 12 h” (doba 25 h nie przesuwa opóźnień); test w `tests/ingest/test_gtfs_versions.py`. Dobę 25.10 i tak oznaczyć jako specjalną (patrz D)
+- [ ] Po pierwszym sync po 25.10: sprawdzić w `days.csv` i `events-quality`, że 25–26.10 nie mają spadku liczby zdarzeń ani skoku |opóźnienia| ≈ 1 h
+- [x] Przenieść `gtfs_versions.py` do `src/krakbus/ingest/` przy szkielecie repo (M2 A)
 
 ### A2. Przetwarzanie przyrostowe (dane napływają cały czas)
 
-Problem: logger zbiera dane ciągle, a nowe dane są wgrywane do `data/raw_A` co jakiś czas. Obecny `build_events.py` liczy wszystko od zera: przy 12 dniach ~8 min i ~2,2 GB RAM, rośnie liniowo (koniec grudnia ~85 dni → ~1 h i kilkanaście GB przy każdym wgraniu). Zasada: każde wgranie przelicza tylko dni, których dotyczą nowe pliki. Szczegóły zasad: decyzja 8 w `PLAN_REALIZACJI.md`.
+Problem: logger zbiera dane ciągle, a nowe dane są wgrywane do `data/raw_A` co jakiś czas. Stary `build_events.py` liczył wszystko od zera: przy 12 dniach ~8 min i ~2,2 GB RAM, rosło liniowo (koniec grudnia ~85 dni → ~1 h i kilkanaście GB przy każdym wgraniu). Zasada: każde wgranie przelicza tylko dni, których dotyczą nowe pliki. Szczegóły zasad: decyzja 8 w `PLAN_REALIZACJI.md`. Zrobione 16.10 jako `uv run build-events` (`src/krakbus/observed/pipeline.py`); stary skrypt usunięty.
 
-- [ ] Wydzielić `build_day(service_date, raw_window, schedule)` z obecnego `build_events.py`
-- [ ] Okno surowych danych dla daty obsługi D: partycje `date=` z D-1, D, D+1. Logger dzieli pliki wg daty **UTC**, lokalna doba zaczyna się o 22:00/23:00 UTC dnia poprzedniego, a kursy nocne doby D jadą już w D+1. Ze wszystkich zdarzeń z okna zostają tylko te z `service_date == D`
-- [ ] Zapis per dzień: `data/processed/events/service_date=D/part.parquet` (nadpisywany atomowo: zapis do pliku tymczasowego i zmiana nazwy)
-- [ ] `manifest.json`: dla każdego D odcisk wejść = lista i rozmiary plików `part-*` z okna D-1..D+1, wersja GTFS będąca właścicielem kalendarza D, wersja kodu (stała `PIPELINE_VERSION` podbijana przy zmianie logiki)
-- [ ] Domyślnie przeliczane są tylko dni, których odcisk się zmienił; nowa wersja GTFS wymusza przeliczenie tylko dni, dla których zmienił się właściciel kalendarza; flaga `--full` liczy wszystko od zera
-- [ ] `days.csv`: `service_date`, dzień tygodnia, zdarzenia, linie, godziny pracy loggera, łączny czas dziur w godzinach ruchu, wersja kalendarza, `status`, `role`
-- [ ] Statusy: `complete` (D i D+1 zebrane w całości), `provisional` (ostatni dzień wgrania albo brak D+1), `gap` (dziura w godzinach ruchu powyżej progu z configu), `special` (z `special_days.yaml`). Dzień `provisional` po kolejnym wgraniu przelicza się sam i może przejść w `complete`
-- [ ] Wydruk na końcu: które dni przeliczono, które zmieniły status, ile jest dni `complete` w każdej roli
-- [ ] `week_analysis.py` czyta katalog `events/` (wszystkie dni albo `DAYS=`), domyślnie tylko `complete`
-- [ ] Test zgodności: wynik przyrostowy (dzień po dniu) identyczny z pełnym przeliczeniem z 16.10 (kopia referencyjna), poza zdarzeniami na granicach okna, które trzeba wyjaśnić
-- [ ] Test przyrostu: drugie uruchomienie bez nowych plików nic nie przelicza; dopisanie jednego pliku `part-*` przelicza tylko dni, których okno go zawiera
+- [x] Wydzielić `build_day(vp_window, schedule_index, day, cfg, tz)` (`observed/events.py`)
+- [x] Okno surowych danych dla daty obsługi D: partycje `date=` z D-1, D, D+1. Logger dzieli pliki wg daty **UTC**, lokalna doba zaczyna się o 22:00/23:00 UTC dnia poprzedniego, a kursy nocne doby D jadą już w D+1. Ze wszystkich zdarzeń z okna zostają tylko te z `service_date == D` (`ingest/raw.py`, cache trzyma w pamięci tylko 3 partycje)
+- [x] Zapis per dzień: `data/processed/events/YYYY-MM-DD.parquet` (nadpisywany atomowo: zapis do pliku tymczasowego i zmiana nazwy)
+- [x] `manifest.json`: dla każdego D odcisk wejść = nazwy i rozmiary plików `part-*` z okna D-1..D+1, wersje GTFS będące właścicielem kalendarza D-1..D+1 (data obsługi wybiera spośród tych trzech dni), progi sekcji `events` z configu, `PIPELINE_VERSION`
+- [x] Domyślnie przeliczane są tylko dni, których odcisk się zmienił albo brakuje ich pliku; `--days` wymusza wskazane, `--dry-run` tylko pokazuje, `--full` liczy wszystko od zera
+- [x] `days.csv`: `service_date`, `weekday`, `status`, `role`, `reason`, zdarzenia, linie, pojazdy, najdłuższa przerwa i łączny czas przerw w godzinach 5–23, `data_until` (ostatnia migawka w oknie), `calendar_stamp`. Status i rola liczone od nowa przy każdym uruchomieniu z zapisanych statystyk, więc zmiana progów `days` albo `special_days.yaml` nie wymaga przeliczania zdarzeń
+- [x] Statusy (w tej kolejności): `provisional` (brak danych do 04:00 doby D+1, `night_end_hour`), `special` (z `special_days.yaml`), `gap` (przerwa > `max_gap_min` = 30 min albo < 500 zdarzeń), `complete`. Dzień `provisional` po kolejnym wgraniu przelicza się sam (zmienia się odcisk okna) i może przejść w `complete`
+- [x] Wydruk na końcu: które dni przeliczono, które zmieniły status, liczba dni w każdym statusie i roli, hash manifestu
+- [x] `week_analysis.py` czyta `events/` przez `krakbus.observed.store.load_events` (domyślnie dni `complete`, `DAYS=` wybiera ręcznie dowolne)
+- [x] Test zgodności z pełnym przeliczeniem z 16.10: 1 531 496 zdarzeń identycznych we wszystkich kolumnach poza `prev_ts`/`next_ts`/`arr_unc`/`dep_unc` w 310/224 zdarzeniach, gdzie poprzedni raport pojazdu jest sprzed > 25 h, czyli poza oknem (stara wartość ≥ 91 453 s, nowa NaN; flagi `arr_ok`/`dep_ok` bez zmian). Brakuje 14 zdarzeń: wszystkie z datą obsługi 16.10 (partycji 16.10 jeszcze nie ma), opóźnienia −4,5 h do −9 h, czyli artefakty `wrong_service_day`. `week_analysis` na nowym magazynie: kluczowe liczby zgodne do trzeciej cyfry (różnica: 15.10 jest teraz `provisional`)
+- [x] Test przyrostu: drugie uruchomienie bez nowych plików nic nie przelicza (< 1 s); dopisanie jednego pliku `part-*` przelicza tylko dni, których okno go zawiera; nowy właściciel kalendarza tylko dni sąsiednie (`tests/observed/test_manifest.py`). Pełne przeliczenie 12 dni: ~2,5 min
 - [ ] `build_chains` (C) i każdy kolejny artefakt per dzień używają tego samego manifestu
 
 ### B. Jakość zdarzeń
@@ -86,9 +86,10 @@ Problem: logger zbiera dane ciągle, a nowe dane są wgrywane do `data/raw_A` co
 - [x] Potwierdzić na ≥3 dniach: dryf wzdłuż trasy, wzrost rozrzutu, slope σ_e, krzywa pętli, korelacja między liniami (stan: `PLAN_REALIZACJI.md`, „Stan na 16.10”)
 - [ ] Bootstrap po kursach dla CI przy kluczowych statystykach (przynajmniej dryf / reset)
 - [ ] Notebook lub skrypt: Marey rzeczywistości dla 179 (jeden dzień)
-- [ ] Kolumna `role` w `days.csv` (`calib` / `valid` / `excluded`) wypełniana regułą z decyzji 8 w planie; do M3 propozycja, od M3 zamrożona
+- [x] Kolumna `role` w `days.csv` (`unassigned` do zamrożenia, potem `calib` / `valid` / `excluded` z `configs/days_split.yaml`; nowe dni `complete` po zamrożeniu dostają `valid`)
 - [ ] Propozycja split dni: zbalansowana względem wersji rozkładu (pokolenia 20261005, 20261010, 20261013, …) i dni tygodnia, a nie „pierwsze → kalibracja, późniejsze → walidacja” (zaktualizować gdy przybędą dni)
-- [ ] `configs/special_days.yaml`: 25.10 (zmiana czasu), 31.10–2.11 (Wszystkich Świętych), 10–12.11 (Święto Niepodległości), okres przedświąteczny w grudniu; z decyzją: wyklucz / osobny reżim / sprawdź w danych
+- [x] `configs/special_days.yaml`: 25.10 (zmiana czasu), 31.10–2.11 (Wszystkich Świętych), 10–12.11 (Święto Niepodległości), 24–26.12; z decyzją: `exclude` / `regime` / `check`
+- [ ] Uzupełnić `special_days.yaml` o okres przedświąteczny w grudniu (od kiedy ruch odbiega od normy — sprawdzić w danych)
 - [ ] Eksport rankingu linii (zdarzenia, dni, med opóźnienia, udział `cross_route`) → `data/processed/route_ranking.csv` pod tor N
 - [ ] Korelacja residuów opóźnień na odcinkach sąsiednich vs odległych (wejście do decyzji o strukturze przestrzennej `u`, M2 B)
 
@@ -101,15 +102,19 @@ Problem: logger zbiera dane ciągle, a nowe dane są wgrywane do `data/raw_A` co
 
 | Plik | Rola |
 |------|------|
-| `sandbox/gtfs-experiments/gtfs_versions.py` | łączenie wersji GTFS, kalendarz efektywny, data obsługi |
-| `tests/test_gtfs_versions.py` | testy reguł daty obsługi i kalendarza |
-| `sandbox/gtfs-experiments/build_events.py` | zdarzenia na rozkładzie per dzień, przyrostowo (A2) |
-| `data/processed/days.csv`, `manifest.json` | rejestr dni i odciski wejść (nowe) |
+| `src/krakbus/ingest/gtfs_versions.py` | łączenie wersji GTFS, kalendarz efektywny, data obsługi |
+| `src/krakbus/ingest/raw.py` | partycje loggera, okno D-1..D+1 |
+| `src/krakbus/observed/events.py`, `pipeline.py` | zdarzenia na rozkładzie per dzień, przyrostowo (A2) |
+| `src/krakbus/observed/days.py`, `manifest.py` | rejestr dni i odciski wejść |
+| `src/krakbus/observed/quality.py` | raport jakości (`events-quality`) |
+| `src/krakbus/observed/store.py` | `load_events()` dla analiz |
+| `configs/config.yaml`, `special_days.yaml` | progi i dni nietypowe |
+| `tests/ingest/`, `tests/observed/` | testy |
 | `sandbox/gtfs-experiments/week_analysis.py` | fakty + KS + wykresy |
-| `sandbox/gtfs-experiments/README_skrypty.md` | zaktualizować kontrakt wyjścia |
-| `data/processed/observed_events.parquet` | artefakt |
-| `data/processed/vehicle_chains.parquet` | artefakt (nowy) |
-| `pyproject.toml` | matplotlib i deps |
+| `sandbox/gtfs-experiments/README_skrypty.md` | kontrakt wejścia/wyjścia |
+| `data/processed/events/`, `days.csv`, `manifest.json` | artefakty |
+| `data/processed/chains/` | artefakt (nowy) |
+| `pyproject.toml` | zależności, komendy |
 
 ## Definition of Done
 

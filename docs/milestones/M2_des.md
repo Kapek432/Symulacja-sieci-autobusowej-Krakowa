@@ -16,9 +16,9 @@ Działająca symulacja zdarzeń dyskretnych (SimPy): debug i testy na **179**, a
 
 ## Wyjście
 
-- Pakiet `src/sim/` uruchamialny przez `uv run …`
+- Pakiet `src/krakbus/sim/` uruchamialny przez `uv run …` (komenda w `[project.scripts]`)
 - `configs/` YAML (linia, dzień, ziarno, γ, ścieżki danych)
-- Parquet/tabela wyników w schemacie zbliżonym do `observed_events`
+- Parquet/tabela wyników w schemacie zbliżonym do zdarzeń obserwowanych (`data/processed/events/`)
 - Testy weryfikacyjne zielone
 - Surowy Marey z symulacji (png/html)
 
@@ -26,9 +26,9 @@ Działająca symulacja zdarzeń dyskretnych (SimPy): debug i testy na **179**, a
 
 ### A. Szkielet repo (można równolegle z końcówką M1)
 
-- [ ] Układ katalogów z `PLAN_REALIZACJI.md` (`src/`, `configs/`, `tests/`); przenieść `gtfs_versions.py` do `src/ingest/` razem z testami
-- [ ] Zależności: `simpy`, ewentualnie `pyyaml`; `uv add …`
-- [ ] Logger zamiast `print` w `src/` (`logging.getLogger(__name__)`)
+- [x] Układ katalogów z `PLAN_REALIZACJI.md` (pakiet `src/krakbus/`, `configs/`, `tests/`); `gtfs_versions.py` przeniesiony do `src/krakbus/ingest/` razem z testami (16.10)
+- [ ] Zależności: `simpy` (`uv add simpy`); `pyyaml` już jest
+- [x] Logger zamiast `print` w `src/` (`krakbus.logger.setup_logging`, `logging.getLogger(...)` per moduł); progi w `configs/config.yaml` przez `krakbus.config.load_config`
 - [ ] Jedno wejście CLI: doba z parametrem `scope=pilot|corridor|city` (+ opcjonalnie lista `route_id`)
 
 ### B. Graf sieci z GTFS

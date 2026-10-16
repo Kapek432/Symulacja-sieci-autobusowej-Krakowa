@@ -96,28 +96,30 @@ Dotyczą kilku kamieni naraz; szczegóły w checklistach.
 6. **Szybka ścieżka obliczeń.** Przy γ=0 pojazdy są niezależne poza łańcuchem i polem `u`, więc dobę można liczyć zwektoryzowaną rekursją (numpy) zamiast pełnego SimPy. Używamy jej w jobach kalibracyjnych; SimPy zostaje silnikiem referencyjnym (walidacja, scenariusze, γ>0). Test równoważności (te same seedy → te same opóźnienia) jest warunkiem użycia.
 7. **Kalendarz dni.** Do kalibracji/walidacji tylko pełne dni robocze. Jawna lista dni specjalnych w configu: zmiana czasu 25.10 (nd), 1.11 (nd, Wszystkich Świętych) i dni okołoświąteczne 31.10/2.11, 11.11 (śr, Święto Niepodległości) i 10.11/12.11 do sprawdzenia, okres przedświąteczny w grudniu. Split dni kalibracja/walidacja zbalansowany względem wersji rozkładu (zmiany 5.10, 10.10, 13.10, kolejne wg loggera).
 8. **Ciągły napływ danych.** Dane przybywają do końca projektu, więc:
-   - **Przetwarzanie przyrostowe:** wyniki zapisywane osobno dla każdej daty obsługi (`data/processed/events/service_date=D/`), dzień D liczony z okna surowych partycji D-1..D+1 (partycje loggera są w UTC, kursy nocne jadą po północy). `manifest.json` trzyma odcisk wejść każdego dnia; wgranie przelicza tylko dni ze zmienionym odciskiem, nowa wersja GTFS tylko dni ze zmienionym właścicielem kalendarza, `--full` wszystko. Pamięć i czas zależą od liczby nowych dni, nie od wszystkich zebranych.
+   - **Przetwarzanie przyrostowe:** wyniki zapisywane osobno dla każdej daty obsługi (`data/processed/events/YYYY-MM-DD.parquet`, komenda `uv run build-events`), dzień D liczony z okna surowych partycji D-1..D+1 (partycje loggera są w UTC, kursy nocne jadą po północy). `manifest.json` trzyma odcisk wejść każdego dnia; wgranie przelicza tylko dni ze zmienionym odciskiem, nowa wersja GTFS tylko dni ze zmienionym właścicielem kalendarza, `--full` wszystko. Pamięć i czas zależą od liczby nowych dni, nie od wszystkich zebranych.
    - **Rejestr dni `days.csv`** ze statusem `complete` / `provisional` / `gap` / `special`. Do analiz, kalibracji i walidacji wchodzą tylko dni `complete`. Ostatni dzień wgrania jest zawsze `provisional` i dolicza się przy kolejnym wgraniu.
    - **Zamrożony podział dni:** do M3 rola dnia (`calib` / `valid` / `excluded`) jest propozycją; przy starcie kalibracji w M3 lista dni kalibracyjnych zostaje zamrożona w `configs/days_split.yaml`. Każdy dzień `complete`, który przyjdzie później, automatycznie dostaje rolę `valid` — to dodatkowa walidacja na dniach z przyszłości (out-of-time), a nie powód do ponownej kalibracji.
    - **Migawka danych przy wynikach:** każdy artefakt kalibracji, walidacji i scenariuszy zapisuje listę użytych dni i hash `manifest.json`. Nowe dane nigdy nie zmieniają po cichu już policzonego wyniku; ponowna kalibracja na większej liczbie dni to świadoma decyzja z nową migawką.
-   - **Rutyna po wgraniu:** ręczne pobranie z Google Drive, rozpakowanie, scalenie z `data/raw_A` (bez usuwania, z nadpisaniem niepełnych plików `part-*`), `build_events` (przyrostowo), raport — konkretne polecenia w [M0](milestones/M0_fundament.md). Każdy robi to u siebie; zgodność danych między osobami sprawdza się po hashu `manifest.json`.
+   - **Rutyna po wgraniu:** ręczne pobranie z Google Drive, rozpakowanie, scalenie z `data/raw_A` (tylko dokładanie plików; pliki `part-*` są niezmienne, niepełny bywa tylko ostatni dzień), `build-events` (przyrostowo), raport — konkretne polecenia w [M0](milestones/M0_fundament.md). Każdy robi to u siebie; zgodność danych między osobami sprawdza się po hashu manifestu wypisywanym przez `build-events`.
 
 ---
 
 ## Układ repo (przy M2)
 
 ```
-configs/                 # scope, parametry per route, scenariusze, batche kalibracji, dni specjalne
-data/raw|interim|processed/
-src/
-  ingest/                # m.in. przeniesiony gtfs_versions.py
-  observed/
+configs/                 # config.yaml, special_days.yaml, days_split.yaml; parametry per route, scenariusze, batche kalibracji
+data/raw_A|processed/
+src/krakbus/             # pakiet (uv sync), komendy w [project.scripts]
+  config.py, logger.py
+  ingest/                # gtfs_versions.py, raw.py (partycje loggera)
+  observed/              # zdarzenia, rejestr dni, manifest; build-events, events-quality
   sim/                   # DES; scope=pilot|corridor|city; szybka ścieżka wektorowa
   calib/                 # S, Optuna/ABC, per-route batch runner, leave-line-out
   scenarios/
   viz/
+sandbox/gtfs-experiments/ # logger, week_analysis.py (eksploracja)
 notebooks/
-tests/
+tests/                   # lustro src/krakbus/ (ingest/, observed/, ...)
 docs/
 ```
 
@@ -128,7 +130,8 @@ docs/
 Pełne checklisty: [`milestones/`](milestones/README.md).
 
 - [x] **M1 / P0:** match GTFS do dnia + przeliczenie events (wszystkie linie w parquet) — `gtfs_versions.py`, testy w `tests/`
-- [ ] **M1 / P0:** `build_events` przyrostowo per dzień + `manifest.json` + `days.csv` (M1 A2) — przed `vehicle_chains`
+- [x] **M1 / P0:** `build-events` przyrostowo per dzień + `manifest.json` + `days.csv` (M1 A2), szkielet `src/krakbus/` (M2 A)
+- [ ] **M1 / P0:** `vehicle_chains` per dzień z flagą `cross_route` (M1 C)
 - [ ] Stałe: logger + sync + backup (rutyna w M0)
 - [ ] Wpisać osoby odpowiedzialne za tory (tabela wyżej)
 - [ ] **M2:** silnik 179 **oraz** graf/łańcuchy całego miasta w loaderze; decyzja o strukturze przestrzennej `u`
@@ -141,7 +144,7 @@ Pełne checklisty: [`milestones/`](milestones/README.md).
 
 | Ryzyko | Objaw | Reakcja |
 |--------|--------|---------|
-| Zły match GTFS | brudne opóźnienia, dni przesunięte o 1 | reguła z decyzji 1 + kontrola „zdarzenia wg daty obsługi vs wg daty lokalnej” w `build_events` |
+| Zły match GTFS | brudne opóźnienia, dni przesunięte o 1 | reguła z decyzji 1 + kontrola liczby zdarzeń i `calendar_stamp` dzień po dniu w `days.csv` |
 | Walidacja linii OOS zjedzona przez kalibrację per linia | brak niezależnego testu przestrzennego | leave-line-out zamrożony w M3 przed batchami N (decyzja 2) |
 | `u` niezidentyfikowane | `u` zamienia się z `a`/`η` przy fit na jednej linii | wspólna kalibracja na korytarzu (decyzja 3) |
 | Łańcuchy międzyliniowe | job jednej linii zaniża przenoszenie | warunek brzegowy z obserwacji (decyzja 4) |
@@ -164,7 +167,8 @@ Pełne checklisty: [`milestones/`](milestones/README.md).
 - **Pełne dni robocze: 9** — 5–9.10 i 12–15.10 (wcześniej raport widział 5). Weekend: 10–11.10. Pokolenia rozkładu w danych: 20261005, 20261010, 20261013.
 - Fakty stylizowane z TEMAT potwierdzone na 9 dniach: KS między dniami roboczymi ≤ 0,10 (pooling uzasadniony), dryf mediany 59 → 205 s wzdłuż trasy, reset na pętli ~84%, γ z efektami stałymi ≈ 0, brak zbijania (obserwacja / model zerowy 0,68), korytarz 179: 124, 144, 169, 173, 174, 608.
 - Pipeline events/raport działa na wszystkich liniach (`gtfs_versions.py` + testy).
+- **Przetwarzanie przyrostowe działa** (16.10, M1 A2): `uv run build-events` w pakiecie `src/krakbus/`, wynik zgodny z pełnym przeliczeniem. W `days.csv`: 10 dni `complete` (5–14.10), 4.10 `gap` (start loggera), 15.10 `provisional` (dane kończą się 16.10 o 00:06, brak kursów nocnych; przejdzie w `complete` po kolejnym wgraniu). Raport `week_analysis` liczy więc teraz 8 pełnych dni roboczych zamiast 9; kluczowe liczby bez zmian do trzeciej cyfry.
 - **Zmiana względem planu z 14.10:** docelowo **cała sieć + kalibracja per linia**, bez ucinania Unity/scenariuszy; dodany tor **N** i wyższa gęstość zadań; decyzje metodologiczne 2–6 (leave-line-out, `u` z korytarza, łańcuchy międzyliniowe, struktura przestrzenna `u`, szybka ścieżka).
-- Najpilniejsze w M1: przetwarzanie przyrostowe (A2), potem `vehicle_chains` (z `cross_route`), flaga outlierów, lista dni specjalnych, split dni.
+- Najpilniejsze w M1: `vehicle_chains` (z `cross_route`) w tym samym układzie per dzień, flaga outlierów, split dni.
 
 Szczegóły liczb — `data/processed/week_report/report.txt`.

@@ -17,11 +17,14 @@ uv sync
 Dane surowe nie są w repo. Pobierz folder `raw_A` (z `vehicle_positions/`, `trip_updates/`, `static/`) ze wspólnego Google Drive i scal go z `data/raw_A/` w katalogu projektu (procedura: [`docs/milestones/M0_fundament.md`](docs/milestones/M0_fundament.md)), potem:
 
 ```
-uv run sandbox/gtfs-experiments/build_events.py
+uv run build-events
+uv run events-quality
 uv run sandbox/gtfs-experiments/week_analysis.py 179
 ```
 
-Wyniki: `data/processed/observed_events.parquet`, raport w `data/processed/week_report/`.
+`build-events` przelicza tylko dni, których dotyczą nowe pliki (`--dry-run` pokazuje które, `--full` liczy wszystko od zera). Wyniki: `data/processed/events/YYYY-MM-DD.parquet` (zdarzenia per data obsługi), `data/processed/days.csv` (status dni: `complete` / `provisional` / `gap` / `special`), `data/processed/manifest.json`, raport w `data/processed/week_report/`.
+
+Kod pakietu: `src/krakbus/` (`ingest/` rozkład GTFS i surowe partycje, `observed/` zdarzenia i rejestr dni), progi w `configs/config.yaml`.
 
 ## Testy i lint
 

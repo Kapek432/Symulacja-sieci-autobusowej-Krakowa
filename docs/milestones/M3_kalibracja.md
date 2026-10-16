@@ -10,7 +10,7 @@ Dopasować parametry na pilocie **i wspólne `u` na korytarzu** (i domknąć met
 
 ## Wejście
 
-- `observed_events` + `vehicle_chains` (po M1, z flagą `cross_route`)
+- Zdarzenia (`data/processed/events/`, `load_events`) + `vehicle_chains` (po M1, z flagą `cross_route`)
 - Uruchamialny DES (M2) i szybka ścieżka `sim.fast`
 - Lista dni kalibracyjnych vs hold-out, lista dni specjalnych (`configs/special_days.yaml`)
 - Lista linii walidacyjnych z TEMAT: 194, 494, 139, 138, 123 (+ 704 porównawczo)
