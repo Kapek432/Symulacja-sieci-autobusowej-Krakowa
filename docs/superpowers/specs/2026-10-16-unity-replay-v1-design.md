@@ -49,7 +49,7 @@ uv run export-network --gtfs data/raw_A/static/GTFS_KRK_A_20261012_123022.zip --
 1. Wczytaj `stops.txt`, `trips.txt`, `stop_times.txt`, `shapes.txt` z ZIP-a. Ogranicz do kursów wybranych linii.
 2. Dla każdej unikalnej pary (`shape_id`, sekwencja przystanków) jeden raz:
    - zamień łamaną kształtu i przystanki na metry (`to_xz`),
-   - **rzutuj przystanki na łamaną po kolei**: dla przystanku `k` szukaj najbliższego punktu na łamanej, zaczynając od pozycji rzutu przystanku `k-1`, żeby trasa wracająca tą samą ulicą nie przeskoczyła na drugi przejazd,
+   - **rzutuj przystanki na łamaną monotonicznie**: rzuty kolejnych przystanków nie cofają się wzdłuż łamanej, a spośród takich sekwencji wybierana jest ta o najmniejszej sumie odległości (programowanie dynamiczne), żeby trasa wracająca tą samą ulicą nie przeskoczyła na drugi przejazd,
    - jeśli odległość przystanku od łamanej > 100 m albo kurs nie ma `shape_id`: ostrzeżenie w logu, odcinek jako prosta przystanek → przystanek,
    - **potnij łamaną** między rzutami kolejnych przystanków. Każdy kawałek zaczyna się w rzucie przystanku `k` i kończy w rzucie przystanku `k+1`.
 3. **Scal odcinki** po kluczu (`from_stop`, `to_stop`): jedna geometria (z pierwszego wystąpienia), suma zbioru linii w `routes`.
