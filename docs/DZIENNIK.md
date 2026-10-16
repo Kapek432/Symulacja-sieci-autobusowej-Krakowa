@@ -31,6 +31,32 @@ Zasady:
 
 ---
 
+## 2026-10-16 — jakość zdarzeń: wrong_service_day i jeden filtr (M1 B)
+
+**Kto:** Kacper Lipiec
+**Commity:** fef3271
+
+Zrobione:
+- `src/krakbus/observed/wrong_day.py`: przepinanie kursów zgłoszonych z `trip_id` innej doby na bliźniaka w usłudze aktywnej w faktycznej dobie; oryginał w `rt_trip_id`, flaga `trip_remapped`.
+- Jeden filtr jakości w zdarzeniach: `delay_class` (`ok` / `outlier` / `wrong_service_day`), `arr_good`, `dep_good`. Progi w configu: `events.outlier_s` = 1800, `events.wrong_day_min_s` = 43200.
+- `PIPELINE_VERSION` = 4 (pełne przeliczenie).
+
+Decyzje:
+- Faktyczna doba kursu liczona z obserwacji (`arr_ts − arr_s + 12 h`, lokalna data), a nie z kalendarza: obejmuje też usługę nieaktywną w żadnym dniu (noc 9→10.10, `20261010_4`). Per zdarzenie, bo ten sam pojazd może jechać ten sam `trip_id` w dwóch dobach okna.
+- Bliźniak = ta sama linia, kierunek i start oraz identyczne `stop_times`, tylko jednoznaczne dopasowania. Dopasowanie „po godzinie” bez sprawdzenia przebiegu odrzucone, bo mogłoby podmienić wariant trasy.
+- Kursy z 1–2 zdarzeniami na pętli po przepięciu mają czasem |opóźnienie| w godzinach (32 zdarzenia); zostają, bo filtr `outlier` je odcina.
+- Puste godz. 2–3 w nocach granicznych pokoleń (4→5, 9→10, 12→13) to brak danych w RT, nie błąd pipeline'u; tylko linie nocne, poza `service_hours`, bez działań.
+
+Sprawdzone:
+- 41 testów (w tym usługa nieaktywna w żadnym dniu i ten sam kurs w dwóch dobach).
+- `uv run build-events`, hash manifestu dd5a166abd0e2966, dni 4–15.10: przepiętych 5018 zdarzeń w 465 kursach (mediana opóźnienia 70 s, 5–95%: −234..418 s); `delay_class`: ok 1 522 975, outlier 11 086, wrong_service_day 36. Noc 9→10 godz. 0–1: 838 i 469 zdarzeń (wcześniej bez daty).
+
+Otwarte / dalej:
+- `week_analysis` nadal ma własny próg 1800 s; przejść na `arr_good` przy najbliższej zmianie raportu.
+- Ranking linii pod tor N, propozycja split dni.
+
+---
+
 ## 2026-10-16 — łańcuchy kursów pojazdów (M1 C)
 
 **Kto:** Kacper Lipiec

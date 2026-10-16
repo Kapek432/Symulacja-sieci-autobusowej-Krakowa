@@ -170,6 +170,7 @@ Pełne checklisty: [`milestones/`](milestones/README.md).
 - **Przetwarzanie przyrostowe działa** (16.10, M1 A2): `uv run build-events` w pakiecie `src/krakbus/`, wynik zgodny z pełnym przeliczeniem. W `days.csv`: 10 dni `complete` (5–14.10), 4.10 `gap` (start loggera), 15.10 `provisional` (dane kończą się 16.10 o 00:06, brak kursów nocnych; przejdzie w `complete` po kolejnym wgraniu). Raport `week_analysis` liczy więc teraz 8 pełnych dni roboczych zamiast 9; kluczowe liczby bez zmian do trzeciej cyfry.
 - **Zmiana względem planu z 14.10:** docelowo **cała sieć + kalibracja per linia**, bez ucinania Unity/scenariuszy; dodany tor **N** i wyższa gęstość zadań; decyzje metodologiczne 2–6 (leave-line-out, `u` z korytarza, łańcuchy międzyliniowe, struktura przestrzenna `u`, szybka ścieżka).
 - **Łańcuchy kursów** (16.10, M1 C): `data/processed/chains/`, łańcuch obserwowany per pojazd; `block_id` zgodny z pojazdem w 99%, przejścia na inną linię 5,3% (większość linii 0–2,5%, 151: 17,5%).
-- Najpilniejsze w M1: flaga outlierów i `wrong_service_day` (B), ranking linii pod tor N, split dni.
+- **Jakość zdarzeń** (16.10, M1 B): jeden filtr `delay_class` / `arr_good` / `dep_good`; kursy zgłaszane z `trip_id` innej doby przepinane na bliźniaka (5018 zdarzeń), bez bliźniaka zostaje 36. Noce graniczne pokoleń mają w RT lukę w godz. 2–3 (tylko linie nocne).
+- Najpilniejsze w M1: ranking linii pod tor N, split dni, fakty stylizowane na `arr_good`.
 
 Szczegóły liczb — `data/processed/week_report/report.txt`.

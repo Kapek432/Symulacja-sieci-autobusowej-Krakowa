@@ -63,12 +63,12 @@ Problem: logger zbiera dane ciągle, a nowe dane są wgrywane do `data/raw_A` co
 
 ### B. Jakość zdarzeń
 
-- [ ] Flaga `outlier = |arr_delay_s| > 1800` (albo równoważna) — jeden spójny filtr zamiast rozproszonych
-- [ ] Osobna klasa `wrong_service_day`: |opóźnienie| ≈ 24 h (po naprawie A: 0,16% zdarzeń, 98 pojazdów, 288 kursów, głównie 7–8.10 i 13–14.10). RT zgłasza `trip_id` usługi z innego dnia, np. kurs usługi pon–śr w czwartek. Sprawdzić, czy da się dopasować odpowiednik kursu w usłudze właściwej dla dnia (ta sama linia, kierunek, godzina); jeśli nie — wykluczyć z flagą
-- [ ] Noc na granicy pokoleń usług (np. 12→13.10, 9→10.10): zdarzenia 0–2 h trafiają do doby następnej (w raporcie 13.10 h0 ≈ 2× norma, 12.10 h0 ≈ 0). Prawdopodobnie RT używa kursów nowej doby od północy; potwierdzić i opisać (wpływa tylko na kursy nocne)
-- [ ] Kandydaci daty obsługi: wczoraj / dziś / jutro (pojazdy na pętli z kursem „na jutro”)
+- [x] Jeden spójny filtr: `delay_class` (`ok` / `outlier` > `outlier_s` = 1800 s / `wrong_service_day`) oraz `arr_good`, `dep_good` w zdarzeniach (16.10: ok 1 522 975, outlier 11 086, wrong_service_day 36)
+- [x] Klasa `wrong_service_day` z przepinaniem na bliźniaka (ta sama linia, kierunek, start, identyczne `stop_times`, usługa aktywna w faktycznej dobie liczonej z `arr_ts − arr_s + 12 h`). Przepiętych 5018 zdarzeń w 465 kursach, mediana opóźnienia 70 s; bez bliźniaka zostaje 36 zdarzeń z flagą
+- [x] Noc na granicy pokoleń (4→5, 9→10, 12→13.10): przesunięcie godz. 0–1 do złej doby naprawione przepinaniem (noc 9→10: usługa `20261010_4` nieaktywna w żadnym dniu, 1282 zdarzenia odzyskane). Puste godz. 2–3 to brak w surowym RT: po ok. 01:00 feed przestaje podawać kursy nocne starego pokolenia (noc kontrolna 10→11 ma ~17 tys. raportów w tych godzinach). Nie do odzyskania, dotyczy tylko linii nocnych poza `service_hours`
+- [x] Kandydaci daty obsługi: wczoraj / dziś / jutro (pojazdy na pętli z kursem „na jutro”)
 - [ ] Opcjonalnie (jak będzie czas): `move_ts` = pierwszy raport >15 m od postoju; porównać z `dep_ts`
-- [ ] Zachować `arr_ok` / `dep_ok` (niepewność ≤ 30 s); udokumentować w README skryptów
+- [x] Zachować `arr_ok` / `dep_ok` (niepewność ≤ 30 s); udokumentować w README skryptów
 
 ### C. Łańcuchy kursów (`vehicle_chains`)
 
