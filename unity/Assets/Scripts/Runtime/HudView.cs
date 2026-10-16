@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Globalization;
 using BusReplay.Core;
 using TMPro;
 using UnityEngine;
@@ -10,6 +12,10 @@ namespace BusReplay
     {
         ReplayApp app;
         TextMeshProUGUI clockText;
+        RectTransform legendBg;
+        int lastSec = -1;
+        float lastSpeed = -1f;
+        readonly Vector3[] corners = new Vector3[4];
 
         public static Canvas CreateCanvas(Transform parent, string name, int order)
         {
@@ -47,8 +53,16 @@ namespace BusReplay
             rt.anchoredPosition = new Vector2(20f, -15f);
             rt.sizeDelta = new Vector2(500f, 120f);
 
-            // legenda: wiersze od dolu
+            // legenda: wiersze od dolu, z ciemnym tlem
             var legend = DelayColors.Legend;
+            var bgImg = new GameObject("LegendBg").AddComponent<Image>();
+            bgImg.transform.SetParent(canvas.transform, false);
+            bgImg.color = new Color(0f, 0f, 0f, 0.8f);
+            bgImg.raycastTarget = false;
+            legendBg = bgImg.rectTransform;
+            legendBg.anchorMin = legendBg.anchorMax = legendBg.pivot = Vector2.zero;
+            legendBg.anchoredPosition = new Vector2(10f, 10f);
+            legendBg.sizeDelta = new Vector2(400f, legend.Length * 34f + 14f);
             for (int i = 0; i < legend.Length; i++)
             {
                 float y = 20f + (legend.Length - 1 - i) * 34f;
@@ -73,8 +87,27 @@ namespace BusReplay
         void Update()
         {
             if (app == null || app.Clock == null) return;
+            int sec = (int)System.Math.Floor(app.Clock.T);
+            float speed = app.Clock.Speed;
+            if (sec == lastSec && speed == lastSpeed) return;
+            lastSec = sec;
+            lastSpeed = speed;
             string hms = PlaybackClock.LocalHms(app.Clock.T, app.Positions.LocalOffsetS);
-            clockText.text = hms + "\n<size=60%>×" + app.Clock.Speed.ToString("0.##");
+            clockText.text = hms + "\n<size=60%>\u00d7" + speed.ToString("0.##", CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>Dopisuje prostokaty zegara i legendy (piksele ekranu).</summary>
+        public void GetScreenRects(List<Rect> into)
+        {
+            if (clockText == null) return;
+            into.Add(ScreenRect(clockText.rectTransform));
+            into.Add(ScreenRect(legendBg));
+        }
+
+        Rect ScreenRect(RectTransform rt)
+        {
+            rt.GetWorldCorners(corners);
+            return Rect.MinMaxRect(corners[0].x, corners[0].y, corners[2].x, corners[2].y);
         }
     }
 }

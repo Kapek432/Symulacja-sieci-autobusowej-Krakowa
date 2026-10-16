@@ -65,9 +65,11 @@ namespace BusReplay
                 Fail("Blad wczytywania danych: " + ex.Message);
                 return;
             }
-            new GameObject("Hud").AddComponent<HudView>().Init(this);
-            new GameObject("SelectionPanel").AddComponent<SelectionPanel>().Init(this);
-            new GameObject("StopLabels").AddComponent<StopLabels>().Init(this);
+            var hud = new GameObject("Hud").AddComponent<HudView>();
+            hud.Init(this);
+            var panel = new GameObject("SelectionPanel").AddComponent<SelectionPanel>();
+            panel.Init(this);
+            new GameObject("StopLabels").AddComponent<StopLabels>().Init(this, hud, panel);
             Loaded?.Invoke();
         }
 

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Globalization;
 using TMPro;
 using UnityEngine;
@@ -17,13 +18,16 @@ namespace BusReplay
         TextMeshProUGUI body;
         Vector2 pressPos;
         bool pressed;
+        float nextRefresh;
+        RectTransform panelRt;
+        readonly Vector3[] corners = new Vector3[4];
 
         public BusView Selected => selected;
 
         /// <summary>Opoznienie jako "+3 min 12 s" / "-1 min 05 s"; NaN daje pauze.</summary>
         public static string FormatDelay(float delayS)
         {
-            if (float.IsNaN(delayS)) return "—";
+            if (float.IsNaN(delayS)) return "\u2014";
             int total = Mathf.RoundToInt(Mathf.Abs(delayS));
             string sign = delayS < 0f && total > 0 ? "-" : "+";
             return string.Format(CultureInfo.InvariantCulture, "{0}{1} min {2:00} s", sign, total / 60, total % 60);
@@ -36,9 +40,9 @@ namespace BusReplay
             panel = new GameObject("Panel");
             panel.transform.SetParent(canvas.transform, false);
             var bg = panel.AddComponent<Image>();
-            bg.color = new Color(0f, 0f, 0f, 0.7f);
+            bg.color = new Color(0f, 0f, 0f, 0.9f);
             bg.raycastTarget = false;
-            var rt = bg.rectTransform;
+            var rt = panelRt = bg.rectTransform;
             rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(1f, 1f);
             rt.anchoredPosition = new Vector2(-20f, -20f);
             rt.sizeDelta = new Vector2(620f, 220f);
@@ -72,7 +76,7 @@ namespace BusReplay
             HandleClick();
             if (selected == null) return;
             if (!selected.Current.Visible) { Select(null); return; }
-            Refresh();
+            if (Time.unscaledTime >= nextRefresh) Refresh();
         }
 
         void HandleClick()
@@ -91,21 +95,30 @@ namespace BusReplay
                 Vector2 pos = mouse.position.ReadValue();
                 if ((pos - pressPos).magnitude >= DragThresholdPx) return;
                 BusView hit = null;
-                if (Physics.Raycast(cam.ScreenPointToRay(pos), out var info))
+                if (Physics.Raycast(cam.ScreenPointToRay(pressPos), out var info))
                     hit = info.collider.GetComponent<BusView>();
                 Select(hit);
             }
         }
 
+        /// <summary>Dopisuje prostokat panelu (piksele ekranu), gdy panel jest widoczny.</summary>
+        public void GetScreenRects(List<Rect> into)
+        {
+            if (selected == null || panelRt == null) return;
+            panelRt.GetWorldCorners(corners);
+            into.Add(Rect.MinMaxRect(corners[0].x, corners[0].y, corners[2].x, corners[2].y));
+        }
+
         void Refresh()
         {
+            nextRefresh = Time.unscaledTime + 0.1f;
             var s = selected.Current;
             body.text =
                 "Linia: " + s.RouteId +
                 "\nKurs: " + s.TripId +
                 "\nPojazd: " + selected.VehicleId +
-                "\nOpóźnienie: " + FormatDelay(s.DelayS) +
-                "\nNa pętli: " + (s.Layover ? "tak" : "nie");
+                "\nOp\u00f3\u017anienie: " + FormatDelay(s.DelayS) +
+                "\nNa p\u0119tli: " + (s.Layover ? "tak" : "nie");
         }
     }
 }
