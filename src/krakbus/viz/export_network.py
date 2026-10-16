@@ -99,7 +99,11 @@ def _shape_lines(shapes: pd.DataFrame, ids: set[str]) -> dict[str, np.ndarray]:
     }
 
 
-def build_network(gtfs: dict[str, pd.DataFrame], routes: list[str] | None) -> dict:
+def build_network(
+    gtfs: dict[str, pd.DataFrame],
+    routes: list[str] | None,
+    gtfs_name: str | None = None,
+) -> dict:
     """Buduje graf sieci: przystanki i skierowane odcinki z lamanymi z `shapes.txt`.
 
     Odcinek (przystanek -> nastepny) dostaje geometrie z pierwszego wzorca, w ktorym
@@ -110,6 +114,7 @@ def build_network(gtfs: dict[str, pd.DataFrame], routes: list[str] | None) -> di
     Args:
         gtfs: Wynik `read_gtfs`.
         routes: Linie do eksportu; None = wszystkie.
+        gtfs_name: Nazwa pliku ZIP GTFS, trafia do `meta.gtfs`.
 
     Returns:
         Slownik `meta`, `stops`, `segments` (kontrakt `network.json`).
@@ -188,6 +193,7 @@ def build_network(gtfs: dict[str, pd.DataFrame], routes: list[str] | None) -> di
     xs, zs = [s["x"] for s in stops], [s["z"] for s in stops]
     meta = {
         "schema_version": SCHEMA_VERSION,
+        "gtfs": gtfs_name,
         "origin": {"lat": ORIGIN_LAT, "lon": ORIGIN_LON, "axes": "x=east m, z=north m"},
         "routes": sorted(set(pat["route_id"])),
         "n_stops": len(stops),
@@ -241,7 +247,7 @@ def main() -> None:
             gtfs_path = cfg.data.raw_dir / "static" / meta["gtfs"]
     if args.routes:
         routes = [str(r) for r in args.routes]
-    net = build_network(read_gtfs(gtfs_path), routes)
+    net = build_network(read_gtfs(gtfs_path), routes, gtfs_path.name)
     path = write_network(net, args.out or cfg.data.processed_dir / "unity_samples")
     m = net["meta"]
     log.info(

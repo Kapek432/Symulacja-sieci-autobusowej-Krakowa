@@ -61,6 +61,7 @@ Generuje go `uv run export-network --positions data/processed/unity_samples/obs_
 | Pole | Znaczenie |
 |---|---|
 | `meta.schema_version` | wersja kontraktu (1) |
+| `meta.gtfs` | nazwa ZIP-a GTFS, z którego zbudowano graf (porównywana z `gtfs` w metadanych pozycji) |
 | `meta.origin` | `lat`, `lon`, `axes` (`x=east m, z=north m`) |
 | `meta.routes` | wyeksportowane linie |
 | `meta.n_stops`, `meta.n_segments` | liczby elementów |

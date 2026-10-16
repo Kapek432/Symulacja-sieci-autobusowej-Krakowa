@@ -154,3 +154,8 @@ def test_read_gtfs(mini_gtfs, tmp_path):
     assert set(g) == {"stops", "trips", "stop_times", "shapes"}
     assert pd.api.types.is_string_dtype(g["stop_times"]["stop_sequence"])
     assert np.all(g["trips"]["shape_id"].fillna("") == ["shA", "shB", ""])
+
+
+def test_meta_gtfs_name(mini_gtfs):
+    net = build_network(mini_gtfs, None, "GTFS_X.zip")
+    assert net["meta"]["gtfs"] == "GTFS_X.zip"
