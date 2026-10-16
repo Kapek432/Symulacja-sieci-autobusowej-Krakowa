@@ -134,7 +134,7 @@ Pełne checklisty: [`milestones/`](milestones/README.md).
 - [x] **M1 / P0:** `vehicle_chains` per dzień z flagą `cross_route` (M1 C)
 - [ ] Stałe: logger + sync + backup (rutyna w M0)
 - [ ] Wpisać osoby odpowiedzialne za tory (tabela wyżej)
-- [ ] **M2:** silnik 179 **oraz** graf/łańcuchy całego miasta w loaderze; decyzja o strukturze przestrzennej `u`
+- [x] **M2:** silnik 179 **oraz** graf/łańcuchy całego miasta w loaderze; decyzja o strukturze przestrzennej `u` (16.10)
 - [ ] **M3/N:** API kalibracji per `route_id` + kolejka batchy; `u` na korytarzu; zamrożone prognozy leave-line-out
 - [ ] Tor U: kontrakt eksportu (od M2)
 
@@ -174,6 +174,7 @@ Pełne checklisty: [`milestones/`](milestones/README.md).
 - **M1 Done** (16.10): `route_ranking.csv` (160 linii; 26 linii daje 50% zdarzeń, 49 daje 70%), robocza propozycja podziału dni (valid 6, 8, 14.10; reszta calib), raport na `arr_good` z CI z bootstrapu (dryf 145 s [143, 147], reset X 0,836 [0,827, 0,840]), Marey dla dowolnej linii. Korelacja residuów między liniami: ten sam odcinek 0,29, sąsiedni 0,04, dalej jak losowe, co jest wejściem do decyzji 5 w M2. Czeka na dane: kontrola 25.10 i okres przedświąteczny.
 - **M2 etap 1** (16.10): `uv run simulate` — sieć dnia z całego GTFS, silnik SimPy z regułą pętli, γ i warunkiem brzegowym, testy weryfikacyjne D zielone, decyzja 5 = `independent`. Doba city (10 279 kursów) liczy się w 0,4 s.
 - **M2 etap 2** (16.10): `--engine fast` (numpy, γ = 0) zgodny z SimPy do 1e-6 s na pilocie, korytarzu i city; doba city 0,015 s zamiast 0,30 s. Decyzja 6 spełniona: fast można używać w kalibracji.
-- Następne: M2 etap 3 (Marey z symulacji, eksport do Unity).
+- **M2 Done** (16.10, etap 3): `uv run marey 179 --sim <run_id>` (nakładka obserwacja ‖ symulacja), `uv run export-unity` z kontraktem v1 (`docs/EXPORT_UNITY.md`); tor U może zacząć scenę na próbce pilota.
+- Następne: M3 (kalibracja na `--engine fast`), tor U faza 1, tor N (batche linii z `route_ranking.csv`).
 
 Szczegóły liczb — `data/processed/week_report/report.txt`.

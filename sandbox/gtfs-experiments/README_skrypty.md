@@ -49,8 +49,9 @@ Logger działa na osobnym komputerze (`C:\gtfs`, zadanie ZTP-logger). Dane z nie
 3. `uv run events-quality` - raport jakości ostatnich 3 dni `complete` (albo `--days ...`).
 4. `uv run route-ranking` - ranking linii (`data/processed/route_ranking.csv`).
 5. `uv run propose-split` - robocza propozycja podziału dni (`data/processed/days_split_proposal.yaml`).
-6. `week_analysis.py` - pełny raport na dniach `complete`; `marey.py` - wykres Mareya jednej linii.
+6. `week_analysis.py` - pełny raport na dniach `complete`; `uv run marey` - wykres Mareya jednej linii (opcjonalnie z nakładką symulacji).
 7. `uv run simulate` - doba w DES (M2) dla zakresu linii.
+8. `uv run export-unity` - przebieg symulacji albo obserwacja dnia dla Unity.
 
 ```
 uv run build-events
@@ -59,7 +60,9 @@ uv run route-ranking
 uv run propose-split
 uv run simulate --date 2026-10-14 --scope pilot
 uv run sandbox/gtfs-experiments/week_analysis.py 179
-uv run sandbox/gtfs-experiments/marey.py 179 2026-10-14
+uv run marey 179 2026-10-14
+uv run marey 179 --sim 2026-10-14_pilot_simpy_s0
+uv run export-unity --sim 2026-10-14_pilot_simpy_s0
 ```
 
 ## Zależności
@@ -133,9 +136,13 @@ uv run simulate --date 2026-10-14 --scope city --engine fast
 - Wyjście: `data/processed/sim/<dzień>_<zakres>_<silnik>_s<ziarno>/events.parquet` (`service_date`, `vehicle_id` = klucz bloku, `trip_id`, `route_id`, `direction_id`, `stop_sequence`, `stop_id`, `arr_s`, `dep_s`, `arr_ts`, `dep_ts`, `arr_delay_s`, `dep_delay_s`, `source` = `sim`, `run_id`, `seed`) i `run.json` (parametry, liczby kursów, wersje GTFS, hash manifestu, commit).
 - Czas 14.10 (sam silnik): city 10 279 kursów SimPy 0,30 s, fast 0,015 s; całe polecenie ok. 16 s, prawie tylko wczytanie rozkładu.
 
-## marey.py
+## marey (`krakbus.viz.marey`)
 
-`uv run sandbox/gtfs-experiments/marey.py [linia] [YYYY-MM-DD]` (domyślnie 179 i ostatni pełny dzień roboczy). Jeden panel na kierunek; oś pionowa to odległość wzdłuż najczęstszego wariantu trasy (proste między przystankami, bo feed nie ma `shape_dist_traveled`). Rozkład kursów, które pojechały, jest szary, obserwacja (`delay_class` = ok) kolorowa wg pojazdu. Wynik `data/processed/week_report/figures/marey_<linia>_<dzień>.png`.
+`uv run marey [linia] [YYYY-MM-DD] [--sim RUN_ID] [--no-obs]` (domyślnie 179 i ostatni pełny dzień roboczy, a przy `--sim` dzień przebiegu). Jeden panel na kierunek; oś pionowa to odległość wzdłuż najczęstszego wariantu trasy (proste między przystankami, bo feed nie ma `shape_dist_traveled`). Rozkład kursów obecnych na wykresie jest szary. Sama obserwacja (`delay_class` = ok) jest kolorowana wg pojazdu; z `--sim` obserwacja jest niebieska, symulacja pomarańczowa (legenda). Wynik `data/processed/week_report/figures/marey_<linia>_<dzień>[_<run_id>].png`. `sandbox/gtfs-experiments/marey.py` to nakładka na tę komendę (te same argumenty).
+
+## export-unity (`krakbus.viz.export_unity`)
+
+Przyjazdy i odjazdy przebiegu symulacji (`--sim RUN_ID`) albo obserwacji dnia (`--obs --date D`) jako wiersze ze współrzędnymi przystanku dla Unity; kontrakt i zasady odtwarzania w `docs/EXPORT_UNITY.md` (`schema_version` 1). Opcje: `--routes ...`, `--format parquet|jsonl`, `--out DIR`. Wynik w `data/processed/unity_samples/`: `<nazwa>.parquet|jsonl` i `<nazwa>.meta.json`. Pilot 14.10: 12 054 wiersze symulacji (2 na zdarzenie), 10 950 wierszy obserwacji.
 
 ## gtfs_versions (`krakbus.ingest.gtfs_versions`)
 

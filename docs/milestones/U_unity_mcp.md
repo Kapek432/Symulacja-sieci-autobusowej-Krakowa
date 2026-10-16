@@ -25,10 +25,10 @@ Wspólny schemat (Parquet lub JSON Lines), np.:
 | `source` | `sim` \| `obs` |
 | `run_id`, `seed` | reprodukowalność |
 
-- [ ] Opisać kontrakt w `docs/` lub `src/viz/EXPORT.md` (1 strona)
-- [ ] Exporter w Pythonie (`src/viz/export_unity.py` lub podobny)
-- [ ] Jedna próbka pliku w `data/processed/unity_samples/` (mała, do gita OK jeśli bez surowego feedu)
-- [ ] Wersjonowanie schematu (`schema_version: 1`)
+- [x] Opisać kontrakt w `docs/` lub `src/viz/EXPORT.md` (1 strona) — [`../EXPORT_UNITY.md`](../EXPORT_UNITY.md) (16.10)
+- [x] Exporter w Pythonie (`src/viz/export_unity.py` lub podobny) — `uv run export-unity` (`krakbus.viz.export_unity`), parquet albo JSON Lines
+- [x] Jedna próbka pliku w `data/processed/unity_samples/` (mała, do gita OK jeśli bez surowego feedu) — próbki lokalnie (`2026-10-14_pilot_simpy_s0`, `obs_2026-10-14_179`), nie w gicie zgodnie z zasadą repo „bez `data/`”; każdy odtwarza je dwoma komendami z kontraktu
+- [x] Wersjonowanie schematu (`schema_version: 1`) — w `<nazwa>.meta.json`
 
 ## Backlog Unity MCP
 

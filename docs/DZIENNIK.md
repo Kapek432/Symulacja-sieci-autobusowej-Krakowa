@@ -31,6 +31,35 @@ Zasady:
 
 ---
 
+## 2026-10-16 — DES etap 3: Marey obs ‖ sim, eksport dla Unity, M2 Done (M2 E, F; tor U)
+
+**Kto:** Kacper Lipiec
+**Commity:** f8f3e30, aabe019, 3dfe585
+
+Zrobione:
+- Pakiet `src/krakbus/viz/`: `layers` (obserwacja i przebieg symulacji w jednym schemacie warstwy), `marey` (`uv run marey`, nakładka obserwacja ‖ symulacja), `export_unity` (`uv run export-unity`).
+- Kontrakt eksportu v1: `docs/EXPORT_UNITY.md`. `sandbox/gtfs-experiments/marey.py` jest teraz nakładką na moduł.
+- `tests/__init__.py`, żeby testy `tests/viz` korzystały z syntetycznego rozkładu z `tests/sim/conftest.py`.
+- M2 oznaczony jako Done; tor U ma odhaczony kontrakt eksportu.
+
+Decyzje:
+- Rozkład w Mareyu z `Network` (etap 1) zamiast osobnego parsowania `stop_times`: jedna definicja kursów i kierunków dnia dla symulacji i wykresu.
+- Jedna warstwa kolorowana wg pojazdu (jak dotąd, widać łańcuchy), dwie wg źródła z legendą (przy kolorach pojazdów nakładka byłaby nieczytelna).
+- Eksport per przystanek (wiersz na przyjazd i odjazd ze współrzędnymi przystanku), Unity interpoluje. Odrzucone próbkowanie pozycji co N sekund: większe pliki i decyzja o kroku, której model nie potrzebuje. Dodatkowe kolumny względem szkicu w `U_unity_mcp.md`: `event`, `direction_id`, `stop_id`, `stop_sequence` (kolejność i rozróżnienie przyjazd/odjazd).
+- Parquet albo JSON Lines (`--format`): JSONL czyta się w C# bez dodatkowej biblioteki.
+- Próbki eksportu zostają lokalnie: zasada repo „bez `data/`” ma pierwszeństwo przed dopuszczeniem małej próbki w `U_unity_mcp.md`.
+
+Sprawdzone:
+- 105 testów w całym projekcie (13 nowych w `tests/viz`), ruff.
+- 14.10, manifest dd5a166abd0e2966: Marey 179 sam i z przebiegiem `2026-10-14_pilot_simpy_s0` obejrzany (dwa panele, kursy monotoniczne, obserwacja 119 kursów na kierunek, symulacja 123); wykres samej obserwacji taki jak przed przeniesieniem.
+- Eksport pilota: 12 054 wiersze = 2 × 6 027 zdarzeń, 15 bloków, bbox w Krakowie (lat 50,004–50,074, lon 19,923–19,961); obserwacja 179: 10 950 wierszy, 20 pojazdów.
+
+Otwarte / dalej:
+- Tor U: scena i loader na próbce pilota (faza 1).
+- Marey i eksport wczytują cały rozkład (ok. 16 s); przy wielu wykresach albo batchach warto cache'ować sieć dnia.
+
+---
+
 ## 2026-10-16 — DES etap 2: szybka ścieżka `fast` i równoważność z SimPy (M2 C2)
 
 **Kto:** Kacper Lipiec

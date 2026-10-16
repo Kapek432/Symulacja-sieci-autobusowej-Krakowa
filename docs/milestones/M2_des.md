@@ -2,7 +2,8 @@
 
 **Najpóźniej:** 7.11.2026  
 **Tor:** M (+ start U i N — [U_unity_mcp.md](U_unity_mcp.md), [N_siec_krakow.md](N_siec_krakow.md))  
-**Wymaga:** sensowny graf/rozkład z GTFS (`gtfs_versions.load_schedule`); idealnie M1 Done (można zacząć szkielet wcześniej na syntetyce)
+**Wymaga:** sensowny graf/rozkład z GTFS (`gtfs_versions.load_schedule`); idealnie M1 Done (można zacząć szkielet wcześniej na syntetyce)  
+**Status:** Done (16.10.2026). Spec: `docs/superpowers/specs/2026-10-16-m2-des-design.md`; plany etapów 1–3 w `docs/superpowers/plans/`. Parametry modelu robocze, kalibracja w M3.
 
 ## Cel
 
@@ -78,12 +79,12 @@ Przy γ=0 pojazdy są niezależne poza łańcuchem i polem `u`, więc dobę da s
 
 ### E. Wizualizacja kontrolna
 
-- [ ] Marey: czas vs pozycja na trasie dla kilku kursów z symulacji
-- [ ] (Opcjonalnie) nakładka na Marey z observed z tego samego „typu dnia”
+- [x] Marey: czas vs pozycja na trasie dla kilku kursów z symulacji — `uv run marey 179 --sim <run_id>` (`krakbus.viz.marey`, 16.10)
+- [x] (Opcjonalnie) nakładka na Marey z observed z tego samego „typu dnia” — obserwacja tego samego dnia co przebieg (obs niebieska, sim pomarańczowa)
 
 ### F. Most do Unity (minimalny)
 
-- [ ] Wywołanie eksportu zgodnego z kontraktem w [U_unity_mcp.md](U_unity_mcp.md) (nawet na syntetycznych pozycjach)
+- [x] Wywołanie eksportu zgodnego z kontraktem w [U_unity_mcp.md](U_unity_mcp.md) (nawet na syntetycznych pozycjach) — `uv run export-unity`, kontrakt v1 w [`../EXPORT_UNITY.md`](../EXPORT_UNITY.md)
 
 ## Definition of Done
 
