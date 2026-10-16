@@ -88,6 +88,12 @@ namespace BusReplay
             {
                 pressPos = mouse.position.ReadValue();
                 pressed = true;
+                if (selected != null && panelRt != null)
+                {
+                    panelRt.GetWorldCorners(corners);
+                    if (Rect.MinMaxRect(corners[0].x, corners[0].y, corners[2].x, corners[2].y).Contains(pressPos))
+                        pressed = false;
+                }
             }
             if (mouse.leftButton.wasReleasedThisFrame && pressed)
             {

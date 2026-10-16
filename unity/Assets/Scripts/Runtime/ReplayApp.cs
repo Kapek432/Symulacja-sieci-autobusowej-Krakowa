@@ -34,9 +34,9 @@ namespace BusReplay
                     : positionsFile + ".meta.json";
                 string metaPath = Path.Combine(dir, metaName);
 
-                RequireFile(netPath, networkFile);
-                RequireFile(posPath, positionsFile);
-                RequireFile(metaPath, metaName);
+                RequireFile(netPath, networkFile, NetworkCmd);
+                RequireFile(posPath, positionsFile, PositionsCmd);
+                RequireFile(metaPath, metaName, PositionsCmd);
 
                 Network = NetworkLoader.Parse(File.ReadAllText(netPath));
                 var meta = PositionsLoader.ParseMeta(File.ReadAllText(metaPath));
@@ -73,13 +73,16 @@ namespace BusReplay
             Loaded?.Invoke();
         }
 
-        static void RequireFile(string path, string name)
+        const string NetworkCmd = "uv run export-network --positions data/processed/unity_samples/obs_peak30.meta.json";
+        const string PositionsCmd = "uv run src/viz/export_unity.py --from 2026-10-14T07:30 --to 2026-10-14T08:00 --out data/processed/unity_samples/obs_peak30";
+
+        static void RequireFile(string path, string name, string cmd)
         {
             if (File.Exists(path)) return;
             throw new ReplayDataException(
                 $"Brak pliku danych: {name}\n(oczekiwano w {path})\n" +
-                "Wygeneruj: uv run export-network --positions ... lub uv run src/viz/export_unity.py ...\n" +
-                "i skopiuj do StreamingAssets/data/");
+                "Wygeneruj: " + cmd + "\n" +
+                "i skopiuj do unity/Assets/StreamingAssets/data/");
         }
 
         static void Fail(string msg)

@@ -27,6 +27,9 @@ namespace BusReplay.Tests
             Assert.AreEqual(110d, p.TMax);
         }
 
+        [Test] public void No_valid_rows_throws() =>
+            Assert.Throws<ReplayDataException>(() => Parse("{oops", ""));
+
         [Test] public void Bad_line_counted() => Assert.AreEqual(1, Parse(Row1, "{oops", Row2).SkippedLines);
 
         [Test] public void Crlf_bom_and_blank_ignored() =>

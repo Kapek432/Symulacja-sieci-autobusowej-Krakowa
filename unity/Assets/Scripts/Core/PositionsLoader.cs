@@ -81,7 +81,7 @@ namespace BusReplay.Core
             foreach (var raw in lines)
             {
                 if (raw == null) continue;
-                var line = raw.Trim().TrimStart('﻿').Trim();
+                var line = raw.Trim().TrimStart('\uFEFF').Trim();
                 if (line.Length == 0) continue;
 
                 RowDto r;
@@ -132,6 +132,8 @@ namespace BusReplay.Core
                 data.Tracks[kv.Key] = new VehicleTrack(kv.Key, t, x, z, br, dl, lay, rt, tr);
             }
 
+            if (groups.Count == 0)
+                throw new ReplayDataException($"brak poprawnych wierszy w pliku pozycji (pominieto {data.SkippedLines})");
             if (groups.Count > 0) { data.TMin = tMin; data.TMax = tMax; }
             return data;
         }

@@ -14,6 +14,13 @@ namespace BusReplay
         public float pitch = 55f;
         public float yaw = 0f;
 
+        /// <summary>Jedno "oczko" kolka = +-10% wysokosci, niezaleznie od skali scrolla (Input System daje +-1 lub +-120).</summary>
+        public static float ZoomHeight(float height, float scroll)
+        {
+            if (Mathf.Abs(scroll) < 0.01f) return height;
+            return Mathf.Clamp(height * Mathf.Pow(0.9f, Mathf.Sign(scroll)), MinHeight, MaxHeight);
+        }
+
         void Start()
         {
             var cam = GetComponent<Camera>();
@@ -34,8 +41,7 @@ namespace BusReplay
                 if (mouse.rightButton.isPressed)
                     yaw += mouse.delta.ReadValue().x * 0.2f;
                 float scroll = mouse.scroll.ReadValue().y;
-                if (Mathf.Abs(scroll) > 0.01f)
-                    height = Mathf.Clamp(height * Mathf.Pow(0.9f, scroll / 120f), MinHeight, MaxHeight);
+                height = ZoomHeight(height, scroll);
             }
             if (kb != null)
             {
