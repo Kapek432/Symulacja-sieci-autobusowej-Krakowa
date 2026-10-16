@@ -50,7 +50,7 @@ Decyzje:
 - Próbki eksportu zostają lokalnie: zasada repo „bez `data/`” ma pierwszeństwo przed dopuszczeniem małej próbki w `U_unity_mcp.md`.
 
 Sprawdzone:
-- 105 testów w całym projekcie (13 nowych w `tests/viz`), ruff.
+- 102 testy w całym projekcie (13 nowych w `tests/viz`), ruff.
 - 14.10, manifest dd5a166abd0e2966: Marey 179 sam i z przebiegiem `2026-10-14_pilot_simpy_s0` obejrzany (dwa panele, kursy monotoniczne, obserwacja 119 kursów na kierunek, symulacja 123); wykres samej obserwacji taki jak przed przeniesieniem.
 - Eksport pilota: 12 054 wiersze = 2 × 6 027 zdarzeń, 15 bloków, bbox w Krakowie (lat 50,004–50,074, lon 19,923–19,961); obserwacja 179: 10 950 wierszy, 20 pojazdów.
 
