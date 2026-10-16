@@ -2,12 +2,12 @@ from pathlib import Path
 
 import pandas as pd
 
-from krakbus.config import EventsConfig
 from krakbus.ingest.raw import list_partitions
 from krakbus.observed.manifest import calendar_owners, day_fingerprint
 from krakbus.observed.pipeline import days_to_build
+from krakbus.observed.store import KINDS
 
-CFG = EventsConfig(episode_gap_s=600, unc_ok_s=30)
+PARAMS = {"events": {"episode_gap_s": 600, "unc_ok_s": 30}, "chains": {"l_min_s": 60}}
 DAYS = ["2026-10-05", "2026-10-06", "2026-10-07", "2026-10-08"]
 
 
@@ -19,7 +19,7 @@ def _part(root: Path, day: str, name: str, size: int = 10) -> None:
 
 def _fingerprints(root: Path, owners: dict[str, str]) -> dict[str, str]:
     parts = list_partitions(root)
-    return {d: day_fingerprint(d, parts, owners, CFG, "1") for d in parts}
+    return {d: day_fingerprint(d, parts, owners, PARAMS, "1") for d in parts}
 
 
 def _manifest(fps: dict[str, str]) -> dict:
@@ -27,9 +27,10 @@ def _manifest(fps: dict[str, str]) -> dict:
 
 
 def _touch_outputs(processed: Path, days: list[str]) -> None:
-    (processed / "events").mkdir(parents=True, exist_ok=True)
-    for d in days:
-        (processed / "events" / f"{d}.parquet").write_bytes(b"")
+    for kind in KINDS:
+        (processed / kind).mkdir(parents=True, exist_ok=True)
+        for d in days:
+            (processed / kind / f"{d}.parquet").write_bytes(b"")
 
 
 def test_new_part_rebuilds_only_days_whose_window_contains_it(tmp_path: Path) -> None:
@@ -62,6 +63,23 @@ def test_missing_output_file_is_rebuilt(tmp_path: Path) -> None:
     _touch_outputs(processed, DAYS[:-1])
     fps = _fingerprints(raw, {})
     assert days_to_build(fps, _manifest(fps), processed, set()) == ["2026-10-08"]
+    (processed / "chains" / "2026-10-05.parquet").unlink()
+    assert days_to_build(fps, _manifest(fps), processed, set()) == [
+        "2026-10-05",
+        "2026-10-08",
+    ]
+
+
+def test_day_without_events_is_not_rebuilt_forever(tmp_path: Path) -> None:
+    raw, processed = tmp_path / "vp", tmp_path / "processed"
+    _part(raw, "2026-10-05", "part-000000.parquet")
+    fps = _fingerprints(raw, {})
+    manifest = {
+        "days": {
+            d: {"fingerprint": fp, "stats": {"n_events": 0}} for d, fp in fps.items()
+        }
+    }
+    assert days_to_build(fps, manifest, processed, set()) == []
 
 
 def test_new_calendar_owner_rebuilds_only_neighbouring_days(tmp_path: Path) -> None:

@@ -23,6 +23,11 @@ class EventsConfig:
 
 
 @dataclass(frozen=True)
+class ChainsConfig:
+    l_min_s: int
+
+
+@dataclass(frozen=True)
 class DaysConfig:
     logger_gap_s: int
     service_hours: tuple[int, int]
@@ -37,6 +42,7 @@ class DaysConfig:
 class Config:
     data: DataConfig
     events: EventsConfig
+    chains: ChainsConfig
     days: DaysConfig
 
 
@@ -49,7 +55,7 @@ def load_config(path: Path = DEFAULT_CONFIG, root: Path = ROOT) -> Config:
     """Wczytuje konfiguracje; sciezki wzgledne sa liczone od katalogu glownego projektu.
 
     Args:
-        path: plik YAML z sekcjami `data`, `events`, `days`.
+        path: plik YAML z sekcjami `data`, `events`, `chains`, `days`.
         root: katalog, wzgledem ktorego rozwijane sa sciezki.
 
     Returns:
@@ -66,6 +72,7 @@ def load_config(path: Path = DEFAULT_CONFIG, root: Path = ROOT) -> Config:
         events=EventsConfig(
             episode_gap_s=int(e["episode_gap_s"]), unc_ok_s=int(e["unc_ok_s"])
         ),
+        chains=ChainsConfig(l_min_s=int(raw["chains"]["l_min_s"])),
         days=DaysConfig(
             logger_gap_s=int(dy["logger_gap_s"]),
             service_hours=(int(dy["service_hours"][0]), int(dy["service_hours"][1])),

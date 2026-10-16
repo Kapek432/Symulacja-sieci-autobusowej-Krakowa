@@ -9,6 +9,11 @@ events:
   # maksymalna niepewnosc czasu przyjazdu/odjazdu uznawana za dobra
   unc_ok_s: 30
 
+chains:
+  # minimalny postoj na petli; opoznienie > zapas - l_min przechodzi na nastepny kurs
+  # (60 s = najlepsze dopasowanie w sekcji 6 week_analysis, 16.10)
+  l_min_s: 60
+
 days:
   # odstep miedzy migawkami loggera uznawany za dziure
   logger_gap_s: 120

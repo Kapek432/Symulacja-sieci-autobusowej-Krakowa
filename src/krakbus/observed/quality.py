@@ -3,6 +3,7 @@
 import argparse
 import logging
 
+import numpy as np
 import pandas as pd
 
 from krakbus.config import Config, load_config
@@ -17,7 +18,7 @@ from krakbus.ingest.raw import (
 from krakbus.logger import setup_logging
 from krakbus.observed.days import COMPLETE
 from krakbus.observed.events import clean_positions
-from krakbus.observed.store import load_days, load_events, select_days
+from krakbus.observed.store import load_chains, load_days, load_events, select_days
 
 PCTL = [0.05, 0.25, 0.5, 0.75, 0.95]
 logger = logging.getLogger("events_quality")
@@ -136,6 +137,46 @@ def log_tripupdates_check(
     )
 
 
+def log_chains(ch: pd.DataFrame, max_delay_s: int = 1800) -> None:
+    """Zgodnosc z blokami, przejscia miedzyliniowe i przenoszenie opoznienia na petli."""
+    nxt = ch[ch["next_trip_id"].notna()]
+    logger.info(
+        "lancuchy: %d kursow, %d pojazdo-dni; z nastepnym kursem %d; zgodne z block_id %.3f; cross_route %.3f",
+        len(ch),
+        ch[["service_date", "vehicle_id"]].drop_duplicates().shape[0],
+        len(nxt),
+        nxt["follows_block"].dropna().astype(bool).mean(),
+        nxt["cross_route"].astype(bool).mean(),
+    )
+    top = nxt.groupby("route_id").agg(
+        n=("trip_id", "size"),
+        cross_route=("cross_route", lambda s: s.astype(bool).mean()),
+    )
+    logger.info(
+        "udzial przejsc na inna linie (top 10 linii po n)\n%s",
+        top.sort_values("n", ascending=False).head(10).round(3).to_string(),
+    )
+    # te same filtry co sekcja 6 week_analysis, zeby liczby byly porownywalne
+    p = nxt[
+        nxt["follows_block"].fillna(False).astype(bool)
+        & (nxt["arr_end_delay_s"].abs() <= max_delay_s)
+        & (nxt["next_dep_first_delay_s"].abs() <= max_delay_s)
+        & nxt["layover_sched_s"].between(-600, 7200)
+    ]
+    a, b = p["arr_end_delay_s"].astype(float), p["next_dep_first_delay_s"].astype(float)
+    reset = 1 - b.median() / a.median() if a.median() > 0 else float("nan")
+    slope = float(np.polyfit(a, b, 1)[0]) if len(p) > 1 else float("nan")
+    logger.info(
+        "petla: par %d, mediana konca %.0f s, mediana odjazdu nastepnego %.0f s, reset X %.2f, przenoszenie OLS %.3f, carried %.3f",
+        len(p),
+        a.median(),
+        b.median(),
+        reset,
+        slope,
+        p["carried"].dropna().astype(bool).mean(),
+    )
+
+
 def log_extremes(ev: pd.DataFrame) -> None:
     cols = [
         "vehicle_id",
@@ -185,6 +226,7 @@ def report(cfg: Config, days: list[str]) -> None:
     log_delays(ev)
     log_coverage(ev, _window("vehicle_positions", VP_COLS, days, cfg), st)
     log_tripupdates_check(ev, _window("trip_updates", TU_COLS, days, cfg), st)
+    log_chains(load_chains(days, statuses=None, processed_dir=cfg.data.processed_dir))
     log_extremes(ev)
 
 

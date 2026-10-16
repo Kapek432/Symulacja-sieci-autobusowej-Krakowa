@@ -1,8 +1,8 @@
-"""Komenda `build-events`: przyrostowe przeliczenie zdarzen przystankowych dzien po dniu.
+"""Komenda `build-events`: przyrostowe przeliczenie zdarzen przystankowych i lancuchow dzien po dniu.
 
 Przelicza tylko dni, ktorych odcisk wejsc (pliki `part-*` z okna D-1..D+1, wlasciciel kalendarza,
-progi zdarzen, `PIPELINE_VERSION`) zmienil sie od poprzedniego uruchomienia. Status i role dni liczy
-od nowa za kazdym razem, bo zaleza tylko od zapisanych statystyk i plikow w `configs/`.
+progi `events` i `chains`, `PIPELINE_VERSION`) zmienil sie od poprzedniego uruchomienia. Status i role
+dni liczy od nowa za kazdym razem, bo zaleza tylko od zapisanych statystyk i plikow w `configs/`.
 """
 
 import argparse
@@ -17,6 +17,7 @@ from krakbus.config import Config, load_config
 from krakbus.ingest.gtfs_versions import load_schedule, load_version_calendars
 from krakbus.ingest.raw import VP_COLS, PartitionCache, list_partitions, window_dates
 from krakbus.logger import setup_logging
+from krakbus.observed.chains import build_chains
 from krakbus.observed.days import COMPLETE, build_registry, day_stats
 from krakbus.observed.events import build_day, index_schedule
 from krakbus.observed.manifest import (
@@ -29,10 +30,10 @@ from krakbus.observed.manifest import (
     save_manifest,
     stats_from_manifest,
 )
-from krakbus.observed.store import day_path
+from krakbus.observed.store import KINDS, day_path
 
-# podbic przy kazdej zmianie logiki, ktora zmienia zawartosc plikow zdarzen
-PIPELINE_VERSION = "1"
+# podbic przy kazdej zmianie logiki, ktora zmienia zawartosc plikow events/ albo chains/
+PIPELINE_VERSION = "2"
 
 logger = logging.getLogger("build_events")
 
@@ -47,10 +48,23 @@ def days_to_build(
     known = manifest.get("days", {})
     out = []
     for day, fp in sorted(fingerprints.items()):
-        prev = known.get(day, {}).get("fingerprint")
-        if day in force or prev != fp or not day_path(processed_dir, day).exists():
+        entry = known.get(day, {})
+        had_events = entry.get("stats", {}).get("n_events", 1) > 0
+        missing = had_events and not all(
+            day_path(processed_dir, day, k).exists() for k in KINDS
+        )
+        if day in force or entry.get("fingerprint") != fp or missing:
             out.append(day)
     return out
+
+
+def _write_day(frames: dict[str, pd.DataFrame], day: str, processed_dir: Path) -> None:
+    for kind, df in frames.items():
+        path = day_path(processed_dir, day, kind)
+        if df.empty:
+            path.unlink(missing_ok=True)
+        else:
+            atomic_write_parquet(df, path)
 
 
 def _rebuild(
@@ -69,6 +83,7 @@ def _rebuild(
     for day in todo:
         vp = cache.window(window_dates(day))
         ev = build_day(vp, idx, day, cfg.events, tz)
+        chains = build_chains(ev, idx.trip_plan, cfg.chains)
         stats = day_stats(
             day,
             ev,
@@ -77,19 +92,16 @@ def _rebuild(
             cfg.days,
             tz,
         )
-        path = day_path(cfg.data.processed_dir, day)
-        if ev.empty:
-            path.unlink(missing_ok=True)
-        else:
-            atomic_write_parquet(ev, path)
+        _write_day({"events": ev, "chains": chains}, day, cfg.data.processed_dir)
         manifest["days"][day] = {
             "fingerprint": fingerprints[day],
             "stats": asdict(stats),
         }
         logger.info(
-            "%s: %d zdarzen, %d linii, maks. przerwa %.1f min",
+            "%s: %d zdarzen, %d kursow w lancuchach, %d linii, maks. przerwa %.1f min",
             day,
             stats.n_events,
+            len(chains),
             stats.n_routes,
             stats.max_gap_min,
         )
@@ -136,8 +148,9 @@ def run(
             f"brak partycji w {cfg.data.raw_dir / 'vehicle_positions'}"
         )
     owners = calendar_owners(load_version_calendars(cfg.data.raw_dir / "static"))
+    params = {"events": asdict(cfg.events), "chains": asdict(cfg.chains)}
     fingerprints = {
-        d: day_fingerprint(d, partitions, owners, cfg.events, PIPELINE_VERSION)
+        d: day_fingerprint(d, partitions, owners, params, PIPELINE_VERSION)
         for d in partitions
     }
     manifest = {"days": {}} if full else load_manifest(manifest_path)

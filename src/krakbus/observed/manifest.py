@@ -3,13 +3,11 @@
 import hashlib
 import json
 import os
-from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
 
-from krakbus.config import EventsConfig
 from krakbus.ingest.raw import files_signature, window_dates
 from krakbus.observed.days import DayStats
 
@@ -27,19 +25,26 @@ def day_fingerprint(
     day: str,
     partitions: dict[str, list[Path]],
     owners: dict[str, str],
-    events_cfg: EventsConfig,
+    params: dict[str, Any],
     pipeline_version: str,
 ) -> str:
-    """Hash wszystkiego, od czego zaleza zdarzenia dnia `day`.
+    """Hash wszystkiego, od czego zaleza zdarzenia i lancuchy dnia `day`.
 
     Kalendarz D-1..D+1, bo data obslugi wybiera sposrod tych trzech dni. Same `stop_times` kursu sa
     identyczne we wszystkich wersjach, wiec nowa wersja GTFS liczy sie tylko przez kalendarz.
+
+    Args:
+        day: data obslugi YYYY-MM-DD.
+        partitions: partycje VehiclePositions z `list_partitions`.
+        owners: wlasciciele kalendarza z `calendar_owners`.
+        params: progi wplywajace na wynik (sekcje configu jako slowniki).
+        pipeline_version: wersja logiki przetwarzania.
     """
     dates = window_dates(day)
     payload = {
         "files": files_signature(partitions, dates),
         "calendar": [owners.get(d.replace("-", ""), "") for d in dates],
-        "events_cfg": asdict(events_cfg),
+        "params": params,
         "pipeline_version": pipeline_version,
     }
     blob = json.dumps(payload, sort_keys=True).encode()

@@ -19,12 +19,16 @@ class ScheduleIndex:
         trips: `trip_id`, `route_id`, `service_id`, `gtfs_stamp`.
         bounds: indeks `trip_id`, kolumny `first_seq`, `last_seq`.
         calendar: aktywne pary (`service_id`, `date`) z efektywnego kalendarza.
+        trip_plan: indeks `trip_id`; `route_id`, `direction_id`, `service_id`, `block_id`,
+            `start_s` (odjazd z pierwszego przystanku), `end_s` (przyjazd na ostatni),
+            `blk_idx` (numer kursu w bloku od 0), `block_next_trip` (nastepny kurs bloku).
     """
 
     stop_times: pd.DataFrame
     trips: pd.DataFrame
     bounds: pd.DataFrame
     calendar: pd.DataFrame
+    trip_plan: pd.DataFrame
 
 
 def hms(col: pd.Series) -> pd.Series:
@@ -45,7 +49,22 @@ def index_schedule(sched: Schedule) -> ScheduleIndex:
         trips=sched.trips[["trip_id", "route_id", "service_id", "gtfs_stamp"]],
         bounds=bounds,
         calendar=sched.calendar,
+        trip_plan=plan_blocks(sched.trips, st),
     )
+
+
+def plan_blocks(trips: pd.DataFrame, st: pd.DataFrame) -> pd.DataFrame:
+    """Rozkladowe czasy kursow i kolejnosc w bloku (`service_id`, `block_id`)."""
+    st = st.sort_values(["trip_id", "stop_sequence"])
+    g = st.groupby("trip_id")
+    times = pd.DataFrame({"start_s": g["dep_s"].first(), "end_s": g["arr_s"].last()})
+    cols = ["trip_id", "route_id", "direction_id", "service_id", "block_id"]
+    plan = trips[cols].drop_duplicates("trip_id").join(times, on="trip_id")
+    plan = plan.sort_values(["service_id", "block_id", "start_s", "trip_id"])
+    blk = plan.dropna(subset=["block_id"]).groupby(["service_id", "block_id"])
+    plan["blk_idx"] = blk.cumcount().astype("Int64")
+    plan["block_next_trip"] = blk["trip_id"].shift(-1)
+    return plan.set_index("trip_id")
 
 
 def clean_positions(vp: pd.DataFrame) -> pd.DataFrame:
