@@ -31,6 +31,28 @@ Zasady:
 
 ---
 
+## 2026-10-16 — złożoność na trzech filarach: decyzja 9 (plan M3–M5)
+
+**Kto:** Kacper Lipiec
+**Commity:** (ten wpis)
+
+Zrobione:
+- Decyzja 9 w `docs/PLAN_REALIZACJI.md`; zadania w `M3_kalibracja.md` (E), `M4_walidacja.md` (C2, D), `M5_scenariusze.md` (E, DoD).
+
+Decyzje:
+- Przy γ = 0 model jest sumą niezależnych pojazdów (łańcuch + zewnętrzne `u`); dowodem jest szybka ścieżka liczona sumą skumulowaną. Argument „system złożony” opieramy więc na trzech filarach zamiast na samym γ, które w danych wstępnych jest bliskie zera: (A) interakcja autobus–autobus na słupku, także między liniami, plus blokowanie na przystanku — mechanizm w modelu, siła z danych; (B) próg przejścia i rozkład kaskad względem zapasu na pętli; (C) sprzężenie pośrednie linii przez bloki międzyliniowe, sprawdzane w danych jako predykcja spoza funkcji celu.
+- Odrzucone: zostawienie złożoności na łańcuchach i `u` (to wspólna przyczyna, nie interakcja; recenzent może uznać falę za propagację wstrząsu) oraz włączenie γ na siłę bez danych (zostaje testem, a scenariusz pokazuje, od jakiego γ zbijanie pojawia się samo).
+- `TEMAT.md` bez zmian: rozszerzenie γ mieści się w jego opisie sprzężenia od odstępu.
+
+Sprawdzone:
+- Dane pozwalają na filar A: zdarzenia mają `arr_ts` i `dep_ts`, więc obserwowany postój istnieje, choć rozkładowy wynosi 0. Filar C: 101 bloków międzyliniowych w dniu roboczym (M1 C). Filar B: szybka ścieżka liczy dobę city w 0,015 s, więc gęsty skan jest tani.
+
+Otwarte / dalej:
+- Kryteria prowadzącego co do „systemu złożonego” — zestawić z decyzją 9, gdy będą.
+- Wstępny test postoju vs odstępu (M3 E) warto zrobić wcześnie: od niego zależy, czy filar A ma dodatni wynik.
+
+---
+
 ## 2026-10-16 — DES etap 3: Marey obs ‖ sim, eksport dla Unity, M2 Done (M2 E, F; tor U)
 
 **Kto:** Kacper Lipiec

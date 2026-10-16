@@ -64,6 +64,15 @@ Dla S4/S5: siatka 2–3 wartości założenia + wykres wrażliwości.
 - [ ] S4, S5 z wrażliwością (korytarz wystarczy, jeśli city za drogie — ale nie wykreślamy S2 city)
 - [ ] Baseline = model bazowy bez interwencji (te same seed’y)
 
+### E. Analizy złożoności (decyzja 9 B, A)
+
+Nie są to dodatkowe interwencje, tylko pomiar zachowania zbiorowego modelu; liczone obok S1–S5 z tymi samymi replikacjami i CI.
+
+- [ ] **Próg przejścia (rozszerzenie S1 i S2):** skan mnożnika zapasu na pętlach (np. 0,25–2,0, gęsto) i siły `u` na `scope=city` szybką ścieżką; miara zasięgu: odsetek kursów sieci z przyrostem opóźnienia powyżej progu po zaburzeniu jednego źródła vs baseline (CRN). Szukamy wartości, przy której zasięg rośnie skokowo, i podajemy, gdzie leżą dzisiejsze zapasy ZTP względem niej
+- [ ] **Kaskady:** zaburzenia pojedynczych odcinków / kursów (losowane z sieci), rozkład wielkości kaskady (liczba kursów i linii dotkniętych), sprawdzenie ogona (log-log, porównanie z wykładniczym); zależność od zapasu z poprzedniego punktu
+- [ ] **Zbijanie się (filar A):** SimPy na korytarzu i jednej gęstej linii, γ w przedziale zgodnym z danymi z M3 E i powyżej, oba `gamma_scope`; miary: rozkład odstępów (CV_h), odsetek par autobusów jadących w odstępie < 1/4 rozkładowego, czas do pierwszej pary; wynik „od jakiego γ zbijanie pojawia się samo” niezależnie od tego, czy dane pokazują γ > 0
+- [ ] Wykresy do raportu: zasięg vs zapas, rozkład kaskad, CV_h vs γ
+
 ### D. Narracja
 
 - [ ] Uzupełnić szablon: „Pętla resetuje X% opóźnienia; najlepsza interwencja obniża rozrzut o Y% kosztem Z”
@@ -75,6 +84,7 @@ Dla S4/S5: siatka 2–3 wartości założenia + wykres wrażliwości.
 - S2 (preferowane też S3) ma wariant na szerszej / pełnej sieci.
 - Tabele + jedno zdanie prezentacyjne.
 - Scenariusze warunkowe opisane jako warunkowe.
+- Analizy złożoności z sekcji E policzone: próg przejścia, rozkład kaskad, zbijanie vs γ.
 
 ## Pułapki
 

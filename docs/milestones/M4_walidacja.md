@@ -55,9 +55,16 @@ Linie walidacyjne walidujemy wynikami z M3 F (warstwa global + grupa, bez danych
 | średnia korelacja między liniami na korytarzu (jest w S warstwy `u`) | wzór dobowy korelacji między liniami; korelacje na wspólnych odcinkach poza korytarzem; ogony; γ=0 vs γ>0 |
 | metryki linii po ich kalibracji per linia | metryki leave-line-out (B) |
 
+### C2. Sprzężenie pośrednie przez bloki (decyzja 9 C)
+
+- [ ] Graf linii: krawędź „wspólny odcinek” i krawędź „blok przechodzący między liniami”; wybrać pary linii połączone tylko blokami (bez wspólnych odcinków)
+- [ ] Dane: korelacja opóźnień takich par (po dniu i oknie, względem par losowych o tej samej częstotliwości) na dniach walidacyjnych
+- [ ] Symulacja `scope=city` z parametrami M3: ta sama statystyka; porównanie sim vs obs z CI. Statystyka nie jest w S (predykcja, nie dopasowanie)
+- [ ] Ablacja: ten sam model z blokami rozciętymi na granicach linii → korelacja par powinna zniknąć
+
 ### D. Ablacje + baseline’y
 
-- [ ] Bez łańcuchów; bez `u`; bez `e_d`
+- [ ] Bez łańcuchów; bez `u`; bez `e_d`; bez bloków międzyliniowych; bez interakcji na słupku (γ = 0) — wkład każdego filaru z decyzji 9
 - [ ] Baseline: rozkład; AR wzdłuż trasy; empiryczny (linia, odcinek, godzina)
 - [ ] Tabela vs nasz model na OOS
 

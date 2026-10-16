@@ -74,11 +74,14 @@ Na samym 179 `u` zlewa się z `a` i `η` — wyróżnia je korelacja między lin
 - [ ] Smoke: ten sam job na drugiej linii z rankingu (np. 169) — nawet jeśli wynik wstępny
 - [ ] Checkpoint trialów (crash-safe) pod długie batche N
 
-### E. Identyfikowalność γ
+### E. Identyfikowalność γ i interakcje autobus–autobus (decyzja 9 A)
 
 - [ ] Przypomnienie z danych: FE okno×odcinek dawało γ≈0 — powtórzyć na czystym M1
-- [ ] W symulacji: czy γ>0 poprawia S na hold-in bez psucia prostoty?
-- [ ] Werdykt roboczy do raportu: bazowo γ=0 / γ>0 z uzasadnieniem (nie musi być „sensacyjny”)
+- [ ] Postój a odstęp w danych: obserwowany postój `dep_ts − arr_ts` (zdarzenia `dep_good`, bez pierwszego i ostatniego przystanku) vs odstęp do poprzedniego autobusu na tym słupku, w trzech wariantach: ta sama linia i kierunek, dowolna linia, tylko inna linia. Efekty stałe słupek × okno (żeby nie mylić z ruchliwością przystanku i porą dnia), osobno krótkie i długie odstępy
+- [ ] Blokowanie na przystanku: czy przyjazd w ciągu kilkudziesięciu sekund po innym autobusie na tym samym słupku wydłuża postój albo opóźnia odjazd (próg z danych, do configu)
+- [ ] Rozszerzenie silnika SimPy: `gamma_scope: route | stop` (odstęp liczony do poprzedniego autobusu tej samej linii albo dowolnej linii na słupku) i opcjonalny składnik blokowania; testy D z M2 dla nowych wariantów (zerowy szum, γ = 0 → wynik bez zmian; jeden opóźniony autobus → następny innej linii na wspólnym słupku dostaje składnik)
+- [ ] W symulacji: czy γ>0 (oba zakresy) poprawia S na hold-in bez psucia prostoty?
+- [ ] Werdykt roboczy do raportu: bazowo γ=0 / γ>0 z uzasadnieniem (nie musi być „sensacyjny”); przedział γ zgodny z danymi idzie do scenariusza zbijania w M5 E
 
 ### F. Leave-line-out (przed batchami N na liniach walidacyjnych)
 
