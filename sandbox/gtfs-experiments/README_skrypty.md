@@ -26,7 +26,7 @@ Symulacja-sieci.../                <- katalog glowny repozytorium
       week_report/figures/*.png
 ```
 
-Logger działa na osobnym komputerze (`C:\gtfs`, zadanie ZTP-logger). Do analizy trzeba skopiować cały folder `data/raw_A` (razem z `static`) do katalogu projektu na komputerze, na którym liczę.
+Logger działa na osobnym komputerze (`C:\gtfs`, zadanie ZTP-logger). Dane z niego trafiają co jakiś czas na wspólny Google Drive; każdy pobiera stamtąd folder `raw_A` (razem z `static`) i scala go z `data/raw_A` w katalogu projektu. Procedura krok po kroku, z komendą scalania dla macOS/Linux i Windows: `docs/milestones/M0_fundament.md`.
 
 ## Kolejność uruchamiania
 

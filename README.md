@@ -14,7 +14,7 @@ Wymagania: [uv](https://docs.astral.sh/uv/), Python 3.14.
 uv sync
 ```
 
-Dane surowe nie są w repo. Skopiuj `data/raw_A/` (z `vehicle_positions/`, `trip_updates/`, `static/`) z komputera z loggerem do katalogu projektu, potem:
+Dane surowe nie są w repo. Pobierz folder `raw_A` (z `vehicle_positions/`, `trip_updates/`, `static/`) ze wspólnego Google Drive i scal go z `data/raw_A/` w katalogu projektu (procedura: [`docs/milestones/M0_fundament.md`](docs/milestones/M0_fundament.md)), potem:
 
 ```
 uv run sandbox/gtfs-experiments/build_events.py

@@ -22,21 +22,35 @@ Utrzymać zbieranie danych i mieć wspólny punkt odniesienia: temat, skrypty, p
 
 ### Rutyna po każdym wgraniu danych z maszyny loggera
 
-Dane z loggera tylko przybywają (nowe pliki `part-*` co ~10 min, nowe wersje GTFS w `static/`), więc kopiujemy wyłącznie nowe pliki i niczego nie nadpisujemy. Zasady przetwarzania: decyzja 8 w [`PLAN_REALIZACJI.md`](../PLAN_REALIZACJI.md).
+Dane trafiają z komputera loggera na Google Drive, a każdy pobiera je stamtąd ręcznie. Dane z loggera tylko przybywają (nowe pliki `part-*` co ~10 min, nowe wersje GTFS w `static/`), więc przy scalaniu niczego nie usuwamy; nadpisujemy tylko pliki, które w nowym pobraniu są pełniejsze. Zasady przetwarzania: decyzja 8 w [`PLAN_REALIZACJI.md`](../PLAN_REALIZACJI.md).
 
-1. [ ] Skopiować nowe pliki `data/raw_A` (vehicle_positions, trip_updates, static) z `C:\gtfs\data\raw_A` na maszynę roboczą, bez usuwania istniejących:
+1. [ ] Na komputerze z loggerem: wrzucić aktualny `C:\gtfs\data\raw_A` (vehicle_positions, trip_updates, static) na wspólny folder Google Drive. Robi to osoba z dostępem do tego komputera, od czasu do czasu
+2. [ ] Każdy u siebie, ręcznie: pobrać folder `raw_A` z Google Drive przez przeglądarkę. Drive pakuje folder do jednego lub kilku plików `drive-download-*.zip` (powyżej ~2 GB dzieli na części) — pobrać **wszystkie części**
+3. [ ] Rozpakować wszystkie części do jednego folderu tymczasowego (np. `~/Downloads/raw_A_import/`) i sprawdzić, że w środku jest `raw_A/` z podfolderami `vehicle_positions/`, `trip_updates/`, `static/`
+4. [ ] Scalić z `data/raw_A` w projekcie. Pliki tylko przybywają, ale ostatni plik `part-*` z poprzedniego pobrania mógł być niepełny (logger go dopisywał) — dlatego kopiujemy też pliki o tej samej nazwie i innym rozmiarze, a niczego nie usuwamy:
+
+   macOS / Linux:
 
    ```
-   rsync -av --ignore-existing <źródło>/raw_A/ data/raw_A/
+   rsync -av --size-only ~/Downloads/raw_A_import/raw_A/ data/raw_A/
    ```
 
-   `<źródło>` zależy od sposobu przenoszenia (dysk sieciowy, pendrive, SSH) — wpisać tu konkretną ścieżkę, gdy będzie ustalona. Uwaga: ostatni, jeszcze dopisywany plik `part-*` może być niepełny; `--ignore-existing` go potem nie zaktualizuje, więc przy kolejnym wgraniu kopiować bez tej flagi albo z `--size-only`.
-2. [ ] Kopia zapasowa tego samego zestawu na **inny dysk** (ta sama komenda, inny cel)
-3. [ ] Przeliczyć przyrostowo: `uv run sandbox/gtfs-experiments/build_events.py` (tylko zmienione dni; `--full` tylko po zmianie logiki). Do czasu wdrożenia M1 A2 skrypt liczy wszystko od zera
-4. [ ] Przejrzeć wydruk `build_events`: które dni przeliczono, które zmieniły status (`provisional` → `complete`), tabela „zdarzenia dzień po dniu” (`wg_daty_obslugi` i `wg_daty_lokalnej` w tym samym rzędzie wielkości, `bez_daty_obslugi` bliskie zera)
-5. [ ] Raport: `uv run sandbox/gtfs-experiments/week_analysis.py 179` (domyślnie tylko dni `complete`)
-6. [ ] Jeśli dziura w dzień roboczy: status `gap` w `days.csv` ustawia się sam; dopisać przyczynę, jeśli znana (restart, awaria sieci)
-7. [ ] Nie commitować surowego `raw_A` ani `data/processed/` do publicznego repo (`.gitignore`)
+   Windows (PowerShell):
+
+   ```
+   robocopy $HOME\Downloads\raw_A_import\raw_A data\raw_A /E /XO
+   ```
+
+   Zawsze importować **najnowsze** pobranie; wgranie starszej paczki po nowszej mogłoby nadpisać pełny plik `part-*` jego niepełną wersją
+5. [ ] Usunąć folder tymczasowy i pobrane ZIP-y (zajmują tyle samo co dane)
+6. [ ] Kopia zapasowa: Google Drive pełni rolę kopii poza dyskiem loggera; dodatkowo raz w tygodniu jedna osoba trzyma kopię `data/raw_A` na **innym dysku** (ta sama komenda scalania, inny cel)
+7. [ ] Przeliczyć przyrostowo: `uv run sandbox/gtfs-experiments/build_events.py` (tylko zmienione dni; `--full` tylko po zmianie logiki). Do czasu wdrożenia M1 A2 skrypt liczy wszystko od zera
+8. [ ] Przejrzeć wydruk `build_events`: które dni przeliczono, które zmieniły status (`provisional` → `complete`), tabela „zdarzenia dzień po dniu” (`wg_daty_obslugi` i `wg_daty_lokalnej` w tym samym rzędzie wielkości, `bez_daty_obslugi` bliskie zera)
+9. [ ] Raport: `uv run sandbox/gtfs-experiments/week_analysis.py 179` (domyślnie tylko dni `complete`)
+10. [ ] Jeśli dziura w dzień roboczy: status `gap` w `days.csv` ustawia się sam; dopisać przyczynę, jeśli znana (restart, awaria sieci)
+11. [ ] Nie commitować surowego `raw_A` ani `data/processed/` do publicznego repo (`.gitignore`)
+
+Każdy z zespołu robi kroki 2–9 u siebie niezależnie. Ponieważ przetwarzanie jest deterministyczne, te same pobrane dane dają u wszystkich te same `days.csv` i zdarzenia; porównując wyniki między osobami, porównujcie hash `manifest.json` (ten sam hash = te same wejścia).
 
 Logger:
 
@@ -48,7 +62,7 @@ Logger:
 | Wejście | Wyjście |
 |---------|---------|
 | Feed ZTP na PC loggera | Przyrost `data/raw_A/…/date=YYYY-MM-DD/` |
-| Sync na laptopie | Lokalna kopia do `build_events` / analiz |
+| Google Drive (ręczne pobranie, scalenie) | Lokalna kopia `data/raw_A` do `build_events` / analiz |
 | `build_events` przyrostowo | `data/processed/events/service_date=D/`, `days.csv`, `manifest.json` |
 
 ## Definition of Done (część ciągła)

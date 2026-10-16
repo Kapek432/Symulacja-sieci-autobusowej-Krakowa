@@ -21,7 +21,7 @@ Dokument roboczy zespołu (3 osoby). Opis tematu dla prowadzącego jest w `TEMAT
 
 **Oś czasu:** kamienie milowe z datą „najpóźniej do”. Wcześniej = lepiej.
 
-**Dane:** logger GTFS-RT działa **ciągle na osobnym komputerze**, nowe dane są wgrywane do `data/raw_A` co jakiś czas (do końca projektu). Sync `data/raw_A` + kopia na inny dysk. Pipeline przetwarza je przyrostowo, a kalibracja pracuje na zamrożonej liście dni (decyzja 8). Surowych danych nie commitować publicznie.
+**Dane:** logger GTFS-RT działa **ciągle na osobnym komputerze**. Co jakiś czas dane trafiają z niego na wspólny folder Google Drive, a każdy z zespołu pobiera je stamtąd ręcznie i scala z lokalnym `data/raw_A` (do końca projektu; procedura w M0). Drive służy też jako kopia poza dyskiem loggera, plus okresowa kopia na inny dysk. Pipeline przetwarza je przyrostowo, a kalibracja pracuje na zamrożonej liście dni (decyzja 8). Surowych danych nie commitować publicznie.
 
 **Unity:** tor równoległy od M2; **Unity MCP**. Symulacja w Pythonie; Unity odtwarza eksport.
 
@@ -100,7 +100,7 @@ Dotyczą kilku kamieni naraz; szczegóły w checklistach.
    - **Rejestr dni `days.csv`** ze statusem `complete` / `provisional` / `gap` / `special`. Do analiz, kalibracji i walidacji wchodzą tylko dni `complete`. Ostatni dzień wgrania jest zawsze `provisional` i dolicza się przy kolejnym wgraniu.
    - **Zamrożony podział dni:** do M3 rola dnia (`calib` / `valid` / `excluded`) jest propozycją; przy starcie kalibracji w M3 lista dni kalibracyjnych zostaje zamrożona w `configs/days_split.yaml`. Każdy dzień `complete`, który przyjdzie później, automatycznie dostaje rolę `valid` — to dodatkowa walidacja na dniach z przyszłości (out-of-time), a nie powód do ponownej kalibracji.
    - **Migawka danych przy wynikach:** każdy artefakt kalibracji, walidacji i scenariuszy zapisuje listę użytych dni i hash `manifest.json`. Nowe dane nigdy nie zmieniają po cichu już policzonego wyniku; ponowna kalibracja na większej liczbie dni to świadoma decyzja z nową migawką.
-   - **Rutyna po wgraniu:** kopiowanie nowych plików, `build_events` (przyrostowo), raport — konkretne polecenia w [M0](milestones/M0_fundament.md).
+   - **Rutyna po wgraniu:** ręczne pobranie z Google Drive, rozpakowanie, scalenie z `data/raw_A` (bez usuwania, z nadpisaniem niepełnych plików `part-*`), `build_events` (przyrostowo), raport — konkretne polecenia w [M0](milestones/M0_fundament.md). Każdy robi to u siebie; zgodność danych między osobami sprawdza się po hashu `manifest.json`.
 
 ---
 
