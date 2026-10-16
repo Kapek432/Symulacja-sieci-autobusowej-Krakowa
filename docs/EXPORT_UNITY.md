@@ -49,3 +49,46 @@ Pozycja pojazdu w chwili `T`: dwa kolejne wiersze pojazdu z `t1 ≤ T < t2`; mi�
 ## Wersjonowanie
 
 Zmiana, która psuje istniejący loader (usunięcie albo zmiana znaczenia kolumny, inna jednostka), podnosi `schema_version`. Dodanie kolumny na końcu nie podnosi wersji; loader ignoruje nieznane kolumny.
+
+## Graf sieci: `network.json`
+
+Generuje go `uv run export-network --positions data/processed/unity_samples/obs_peak30.meta.json` (GTFS i linie z metadanych pozycji) albo `--gtfs ZIP [--routes 102 104 ...]`; `--out DIR` zmienia katalog (domyślnie `data/processed/unity_samples`). Układ współrzędnych: `x` na wschód, `z` na północ, metry od Rynku Głównego (`origin`: lat 50.0617, lon 19.9373), rzut equirectangular. Wartości zaokrąglone do 0,1 m.
+
+```json
+{"meta": {...}, "stops": [...], "segments": [...]}
+```
+
+| Pole | Znaczenie |
+|---|---|
+| `meta.schema_version` | wersja kontraktu (1) |
+| `meta.origin` | `lat`, `lon`, `axes` (`x=east m, z=north m`) |
+| `meta.routes` | wyeksportowane linie |
+| `meta.n_stops`, `meta.n_segments` | liczby elementów |
+| `meta.n_straight` | odcinki proste zamiast kształtu wg powodu: `no_shape` (kurs bez `shape_id`), `far_stop` (przystanek dalej niż 100 m od kształtu; dotyczy obu sąsiednich odcinków) |
+| `meta.bbox` | `x_min`, `x_max`, `z_min`, `z_max` przystanków |
+| `stops[]` | `stop_id`, `name`, `x`, `z` (tylko przystanki użyte w odcinkach) |
+| `segments[]` | `from_stop`, `to_stop` (skierowany odcinek między kolejnymi przystankami), `routes` (posortowana lista linii), `points` |
+
+`points` to płaska lista `[x0, z0, x1, z1, ...]` (co najmniej 2 punkty): fragment `shapes.txt` między rzutami przystanków, uproszczony algorytmem Douglasa-Peuckera (2 m). Odcinek wspólny dla wielu linii występuje raz, z geometrią z pierwszego wzorca.
+
+## Pozycje GPS: `obs_peak30.jsonl`
+
+Pozycje pojazdów w stałym kroku czasu, jeden wiersz JSON na pojazd i chwilę.
+
+| Pole | Typ | Znaczenie |
+|---|---|---|
+| `t` | int | czas, sekundy epoki Unix (UTC) |
+| `sim_time_s` | int | sekundy od północy dnia `service_date` (czas lokalny) |
+| `service_date` | str | dzień rozkładowy |
+| `vehicle_id` | str | pojazd |
+| `trip_id` | str | kurs GTFS |
+| `route_id` | str | linia |
+| `lat`, `lon` | float | pozycja (WGS84) |
+| `x`, `z` | float | pozycja w układzie `network.json` (metry) |
+| `bearing` | float | kierunek jazdy, stopnie |
+| `status` | int | `current_status` GTFS-RT: 0 podjeżdża, 1 stoi na przystanku, 2 w drodze |
+| `delay_s` | float / null | opóźnienie w sekundach (kolor); null = brak |
+| `layover` | bool | postój na pętli (kolor szary) |
+| `source` | str | `obs` albo `sim` |
+
+Metadane (`obs_peak30.meta.json`): `schema_version`, `run_id`, `gtfs` (nazwa ZIP-a w `data/raw_*/static`), `origin`, `t_min`, `t_max`, `rows`, `vehicles`, `routes`.
