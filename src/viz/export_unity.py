@@ -25,11 +25,10 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from krakbus.viz.geo import ORIGIN_LAT, ORIGIN_LON, to_xz
+
 SCHEMA_VERSION = 1
 TZ = "Europe/Warsaw"
-# origin of the local Unity coordinate system: Main Market Square (Rynek Glowny)
-ORIGIN_LAT, ORIGIN_LON = 50.0617, 19.9373
-EARTH_R = 6_371_000.0
 LAYOVER_RADIUS_M = 150  # this close to the 1st stop = still at the terminus (buses park away from the pole)
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -38,13 +37,6 @@ ROOT = Path(__file__).resolve().parents[2]
 def hms(col):
     p = col.str.split(":", expand=True).astype(int)
     return p[0] * 3600 + p[1] * 60 + p[2]
-
-
-def to_xz(lat, lon):
-    """Metres from ORIGIN: x east, z north (equirectangular, fine at city scale)."""
-    x = np.radians(lon - ORIGIN_LON) * EARTH_R * np.cos(np.radians(ORIGIN_LAT))
-    z = np.radians(lat - ORIGIN_LAT) * EARTH_R
-    return x, z
 
 
 def pick_gtfs(static_dir, first_ts):
