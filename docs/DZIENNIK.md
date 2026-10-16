@@ -31,6 +31,36 @@ Zasady:
 
 ---
 
+## 2026-10-16 — DES etap 1: sieć dnia, silnik SimPy, `simulate`, decyzja o `u` (M2 A–D)
+
+**Kto:** Kacper Lipiec
+**Commity:** f910361 (spec), c18f1bd, e2820dc (plan), bccab4b, 88ce472, 7041d7a, 7bdf134, af63b3a, 6fadc80, 587f4fd
+
+Zrobione:
+- Pakiet `src/krakbus/sim/`: `params` (`configs/sim.yaml`), `network` (sieć dnia z całego GTFS: kursy w kolejności bloków, zapasy na pętli, skierowane odcinki ze wspólnym `seg_id`), `noise` (szum losowany z góry), `model` (przyrost na odcinku, reguła pętli), `boundary` (warunek brzegowy), `engine` (proces SimPy na blok, opcjonalne γ), `run` (CLI `uv run simulate`).
+- Wynik w `data/processed/sim/<run_id>/`: zdarzenia w schemacie zbliżonym do obserwowanych i `run.json` z parametrami, wersjami GTFS, hashem manifestu i commitem.
+- Spec i plan etapu 1 w `docs/superpowers/`.
+
+Decyzje:
+- Decyzja 5 z planu: `u` = `independent` (wspólne dla linii na tym samym odcinku, niezależne między odcinkami, AR(1) po oknach 900 s). Uzasadnienie z M1: korelacja residuów między liniami na tym samym odcinku 0,29, na sąsiednim 0,04, dalej jak losowe. Odrzucone `neighbors`/`corridor`: dodatkowe parametry bez sygnału w danych.
+- Cały szum (e_d, δ, η, u) losowany z góry dla całej sieci dnia w stałej kolejności: kurs dostaje ten sam szum niezależnie od zakresu, a szybka ścieżka z etapu 2 może dostać te same tablice. Odrzucone losowanie wewnątrz procesów SimPy, bo wynik zależałby od kolejności zdarzeń.
+- Okno `u` i pora dryfu wg rozkładowego odjazdu z przystanku, nie faktycznego: inaczej opóźnienie przesuwałoby kurs między oknami i silniki rozjeżdżałyby się na granicach okien.
+- Pojazd jedzie blok z planu (`block_id`), nie zaobserwowany łańcuch (block_id zgadza się w 99,1%); obserwacje służą tylko warunkowi brzegowemu (`boundary: observed`).
+- Postój pośredni = rozkładowy (w GTFS ZTP zawsze 0), więc opóźnienie odjazdu = przyjazdu; model postoju zostaje na później, jeśli kalibracja go wymusi.
+
+Sprawdzone:
+- 72 testy (`tests/sim`: zerowy szum = rozkład, pochłanianie i przenoszenie na pętli, dryf, wzrost rozrzutu z η, niezależność łańcuchów przy γ = 0 i u = 0, γ na odstępie, warunek brzegowy; 2 testy na prawdziwym GTFS), ruff na `src tests`.
+- 14.10, manifest dd5a166abd0e2966, parametry robocze z `sim.yaml`, ziarno 0: pilot 246 kursów; korytarz 844 kursy, 27 brzegowych (`observed`); city 10 279 kursów, 218 738 zdarzeń, mediana opóźnienia 67 s, na końcu kursu 125 s (p10 −23 s, p90 299 s). Silnik city 0,4 s; całość komendy ok. 16 s (wczytanie rozkładu).
+- 179 z prawdziwego GTFS przy zerowym szumie odtwarza rozkład co do sekundy.
+
+Otwarte / dalej:
+- Etap 2: `sim.fast` i test równoważności z SimPy. SimPy liczy dobę city w 0,4 s, więc szybka ścieżka jest potrzebna dopiero przy tysiącach przebiegów w kalibracji; zostaje w planie, ale bez pośpiechu.
+- Wczytanie rozkładu (16 s) dominuje czas; przy batchach (tor N) warto cache'ować sieć dnia.
+- Etap 3: Marey z symulacji z nakładką obserwacji, eksport do Unity.
+- Parametry modelu nieskalibrowane (M3); bez porównań sim vs obs.
+
+---
+
 ## 2026-10-16 — domknięcie M1: ranking linii, podział dni, CI, struktura u, Marey (M1 D)
 
 **Kto:** Kacper Lipiec

@@ -50,12 +50,14 @@ Logger działa na osobnym komputerze (`C:\gtfs`, zadanie ZTP-logger). Dane z nie
 4. `uv run route-ranking` - ranking linii (`data/processed/route_ranking.csv`).
 5. `uv run propose-split` - robocza propozycja podziału dni (`data/processed/days_split_proposal.yaml`).
 6. `week_analysis.py` - pełny raport na dniach `complete`; `marey.py` - wykres Mareya jednej linii.
+7. `uv run simulate` - doba w DES (M2) dla zakresu linii.
 
 ```
 uv run build-events
 uv run events-quality
 uv run route-ranking
 uv run propose-split
+uv run simulate --date 2026-10-14 --scope pilot
 uv run sandbox/gtfs-experiments/week_analysis.py 179
 uv run sandbox/gtfs-experiments/marey.py 179 2026-10-14
 ```
@@ -113,6 +115,20 @@ Ranking linii pod batche toru N, domyślnie z pełnych dni roboczych (albo `--da
 ## propose-split (`krakbus.observed.split`)
 
 Robocza propozycja podziału dni `complete` na `calib` i `valid`. Warstwy to typ dnia (roboczy, sobota, niedziela) × pokolenie rozkładu (dominujący prefiks `service_id` dnia). W każdej warstwie dni walidacyjne (`days.valid_fraction`) są rozłożone równomiernie w czasie. Wynik `data/processed/days_split_proposal.yaml` ma format `configs/days_split.yaml`; zamrożenie w M3 to skopiowanie go do configs. Dni bez statusu `complete` nie trafiają do `excluded`, bo wyklucza je sam status (dzień `provisional` po kolejnym wgraniu staje się pełny).
+
+## simulate (`krakbus.sim.run`)
+
+Doba obsługi w symulacji zdarzeń dyskretnych (SimPy), parametry w `configs/sim.yaml` (spec: `docs/superpowers/specs/2026-10-16-m2-des-design.md`). Sieć dnia jest budowana z całego GTFS (wszystkie linie aktywne w efektywnym kalendarzu, bloki z `block_id`), zakres wybiera tylko kursy do symulacji: `pilot` (179), `corridor` (179, 169, 174, 173, 144, 124), `city` (wszystko) albo jawna lista `--routes`. Pojazd jedzie cały blok z planu; kurs, którego poprzednik w bloku jest spoza zakresu, startuje z opóźnieniem z warunku brzegowego (`boundary: observed` = opóźnienie na końcu poprzednika z `chains/` dnia przez regułę pętli, brak obserwacji albo `delta` = losowe δ). Szum losowany z góry z ziarna, `u` wspólne dla linii na tym samym skierowanym odcinku, niezależne między odcinkami, AR(1) po oknach 900 s. Parametry modelu robocze (kalibracja w M3).
+
+```
+uv run simulate --date 2026-10-14 --scope pilot
+uv run simulate --date 2026-10-14 --scope corridor --seed 3
+uv run simulate --date 2026-10-14 --routes 704 503
+```
+
+- Wejście: `data/raw_A/static`, opcjonalnie `data/processed/chains/<dzień>.parquet`.
+- Wyjście: `data/processed/sim/<dzień>_<zakres>_<silnik>_s<ziarno>/events.parquet` (`service_date`, `vehicle_id` = klucz bloku, `trip_id`, `route_id`, `direction_id`, `stop_sequence`, `stop_id`, `arr_s`, `dep_s`, `arr_ts`, `dep_ts`, `arr_delay_s`, `dep_delay_s`, `source` = `sim`, `run_id`, `seed`) i `run.json` (parametry, liczby kursów, wersje GTFS, hash manifestu, commit).
+- Czas 14.10: city 10 279 kursów w 0,4 s silnika; całość ok. 16 s, prawie tylko wczytanie rozkładu.
 
 ## marey.py
 

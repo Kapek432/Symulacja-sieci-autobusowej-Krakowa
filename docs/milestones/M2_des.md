@@ -27,36 +27,36 @@ Działająca symulacja zdarzeń dyskretnych (SimPy): debug i testy na **179**, a
 ### A. Szkielet repo (można równolegle z końcówką M1)
 
 - [x] Układ katalogów z `PLAN_REALIZACJI.md` (pakiet `src/krakbus/`, `configs/`, `tests/`); `gtfs_versions.py` przeniesiony do `src/krakbus/ingest/` razem z testami (16.10)
-- [ ] Zależności: `simpy` (`uv add simpy`); `pyyaml` już jest
+- [x] Zależności: `simpy` (`uv add simpy`); `pyyaml` już jest (16.10)
 - [x] Logger zamiast `print` w `src/` (`krakbus.logger.setup_logging`, `logging.getLogger(...)` per moduł); progi w `configs/config.yaml` przez `krakbus.config.load_config`
-- [ ] Jedno wejście CLI: doba z parametrem `scope=pilot|corridor|city` (+ opcjonalnie lista `route_id`)
+- [x] Jedno wejście CLI: doba z parametrem `scope=pilot|corridor|city` (+ opcjonalnie lista `route_id`) — `uv run simulate --date --scope [--routes] [--seed]` (16.10)
 
 ### B. Graf sieci z GTFS
 
-- [ ] Wierzchołki = słupki (stop_id); krawędzie = odcinki kolejnych stop_sequence na tripie
-- [ ] Bazowy czas przejazdu z rozkładu (różnica arrival/departure kolejnych przystanków)
-- [ ] Loader buduje graf dla **wszystkich** route_id; filtr scope tylko przy spawnieniu pojazdów
-- [ ] `scope=pilot` → 179 (oba `direction_id`) na testy
-- [ ] Smoke `scope=city` z γ=0 i zerowym/sztywnym szumem: czy w ogóle wstaje (może być wolne — OK, profil pod N)
-- [ ] Ładowanie łańcuchów: block_id → sekwencja tripów dnia (cała sieć), łańcuchy przechodzące między liniami zachowane w całości (flaga `cross_route` z M1 C)
-- [ ] Przy `scope` węższym niż city: kurs wjeżdżający do łańcucha z linii spoza scope dostaje opóźnienie startowe z warunku brzegowego (obserwowane albo z rozkładu empirycznego), a nie zero
-- [ ] **Decyzja: struktura przestrzenna `u`** (niezależne odcinki vs korelacja sąsiednich odcinków / korytarza ulicznego) na podstawie analizy residuów z M1 D (16.10, sekcja 13 `week_analysis`: ten sam odcinek 0,29, sąsiedni 0,04, od 3 odcinków dalej tyle co losowe 0,005, co przemawia za `independent` ze wspólnym `u` na odcinku dzielonym przez linie); zapisać w configu (`u.spatial: independent|neighbors|corridor`) i uzasadnienie w `docs/`
+- [x] Wierzchołki = słupki (stop_id); krawędzie = odcinki kolejnych stop_sequence na tripie (`sim.network`, skierowane odcinki ze wspólnym `seg_id` dla wszystkich linii)
+- [x] Bazowy czas przejazdu z rozkładu (różnica arrival/departure kolejnych przystanków)
+- [x] Loader buduje graf dla **wszystkich** route_id; filtr scope tylko przy spawnieniu pojazdów
+- [x] `scope=pilot` → 179 (oba `direction_id`) na testy
+- [x] Smoke `scope=city` z γ=0 i zerowym/sztywnym szumem: czy w ogóle wstaje (14.10: 10 279 kursów, 218 738 zdarzeń, silnik 0,4 s; wczytanie rozkładu ok. 16 s)
+- [x] Ładowanie łańcuchów: block_id → sekwencja tripów dnia (cała sieć), łańcuchy przechodzące między liniami zachowane w całości (flaga `cross_route` z M1 C)
+- [x] Przy `scope` węższym niż city: kurs wjeżdżający do łańcucha z linii spoza scope dostaje opóźnienie startowe z warunku brzegowego (obserwowane albo z rozkładu empirycznego), a nie zero (`boundary: observed|delta`; korytarz 14.10: 27 kursów brzegowych)
+- [x] **Decyzja: struktura przestrzenna `u`** — `independent` (16.10, `configs/sim.yaml`, spec `docs/superpowers/specs/2026-10-16-m2-des-design.md`) (niezależne odcinki vs korelacja sąsiednich odcinków / korytarza ulicznego) na podstawie analizy residuów z M1 D (16.10, sekcja 13 `week_analysis`: ten sam odcinek 0,29, sąsiedni 0,04, od 3 odcinków dalej tyle co losowe 0,005, co przemawia za `independent` ze wspólnym `u` na odcinku dzielonym przez linie); zapisać w configu (`u.spatial: independent|neighbors|corridor`) i uzasadnienie w `docs/`
 
 ### C. Silnik SimPy
 
-- [ ] Proces pojazdu: for trip in chain: for stop in trip: przyjazd → (postój) → odjazd → odcinek
-- [ ] Propagacja opóźnienia (bazowo):
+- [x] Proces pojazdu: for trip in chain: for stop in trip: przyjazd → (postój) → odjazd → odcinek (postój rozkładowy, w GTFS ZTP zawsze 0)
+- [x] Propagacja opóźnienia (bazowo):
 
   Δ_{s+1} = Δ_s + a_{p,s} + e_d + u_{d,h,s} + γ(h − h_rozk) + η
 
   z przełącznikami: na M2 wystarczy a, η, u uproszczone (np. stałe/losowe), γ=0 domyślnie
-- [ ] Reguła pętli:
+- [x] Reguła pętli:
 
   Δ_odj(i+) = max(Δ_koniec + ℓ_min − L, δ)
 
   δ z rozkładu empirycznego (placeholder OK, jeśli M1 jeszcze domyka krzywą)
-- [ ] Zegar symulacji = sekundy doby; ziarno w configu
-- [ ] Zapis zdarzeń: te same kluczowe kolumny co observed (`service_date`, `trip_id`, `stop_id`, `arr_ts`/`dep_ts` lub delay, `route_id`, `vehicle_id` / block)
+- [x] Zegar symulacji = sekundy doby; ziarno w configu
+- [x] Zapis zdarzeń (`data/processed/sim/<run_id>/events.parquet` + `run.json`): te same kluczowe kolumny co observed (`service_date`, `trip_id`, `stop_id`, `arr_ts`/`dep_ts` lub delay, `route_id`, `vehicle_id` / block)
 
 ### C2. Szybka ścieżka wektorowa (pod kalibrację)
 
@@ -69,12 +69,12 @@ Przy γ=0 pojazdy są niezależne poza łańcuchem i polem `u`, więc dobę da s
 
 ### D. Testy weryfikacyjne
 
-- [ ] η=0, a=0, u=0, γ=0 → czasy = rozkład (z tolerancją zaokrągleń)
-- [ ] Opóźnienie < L − ℓ_min → pochłonięte; większe → przechodzi na następny kurs
-- [ ] Sam dryf a>0 → mediana rośnie wzdłuż trasy; rozrzut bez η nie eksploduje
-- [ ] Z η → std opóźnienia rośnie z numerem przystanku
-- [ ] To samo ziarno → bitowo / numerycznie reprodukowalne wyniki
-- [ ] γ=0 → brak wpływu sąsida poza łańcuchem i wspólnym u (gdy u wyłączone: pełna niezależność kursów poza pętlą)
+- [x] η=0, a=0, u=0, γ=0 → czasy = rozkład (z tolerancją zaokrągleń); też na 179 z prawdziwego GTFS
+- [x] Opóźnienie < L − ℓ_min → pochłonięte; większe → przechodzi na następny kurs
+- [x] Sam dryf a>0 → mediana rośnie wzdłuż trasy; rozrzut bez η nie eksploduje
+- [x] Z η → std opóźnienia rośnie z numerem przystanku
+- [x] To samo ziarno → bitowo / numerycznie reprodukowalne wyniki (szum losowany z góry; porównanie SimPy vs fast w C2)
+- [x] γ=0 → brak wpływu sąsida poza łańcuchem i wspólnym u (gdy u wyłączone: pełna niezależność kursów poza pętlą)
 
 ### E. Wizualizacja kontrolna
 
