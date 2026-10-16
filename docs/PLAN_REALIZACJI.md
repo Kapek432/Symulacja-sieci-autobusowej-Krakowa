@@ -173,6 +173,7 @@ Pełne checklisty: [`milestones/`](milestones/README.md).
 - **Jakość zdarzeń** (16.10, M1 B): jeden filtr `delay_class` / `arr_good` / `dep_good`; kursy zgłaszane z `trip_id` innej doby przepinane na bliźniaka (5018 zdarzeń), bez bliźniaka zostaje 36. Noce graniczne pokoleń mają w RT lukę w godz. 2–3 (tylko linie nocne).
 - **M1 Done** (16.10): `route_ranking.csv` (160 linii; 26 linii daje 50% zdarzeń, 49 daje 70%), robocza propozycja podziału dni (valid 6, 8, 14.10; reszta calib), raport na `arr_good` z CI z bootstrapu (dryf 145 s [143, 147], reset X 0,836 [0,827, 0,840]), Marey dla dowolnej linii. Korelacja residuów między liniami: ten sam odcinek 0,29, sąsiedni 0,04, dalej jak losowe, co jest wejściem do decyzji 5 w M2. Czeka na dane: kontrola 25.10 i okres przedświąteczny.
 - **M2 etap 1** (16.10): `uv run simulate` — sieć dnia z całego GTFS, silnik SimPy z regułą pętli, γ i warunkiem brzegowym, testy weryfikacyjne D zielone, decyzja 5 = `independent`. Doba city (10 279 kursów) liczy się w 0,4 s.
-- Następne: M2 etap 2 (szybka ścieżka numpy i test równoważności z SimPy), etap 3 (Marey z symulacji, eksport do Unity).
+- **M2 etap 2** (16.10): `--engine fast` (numpy, γ = 0) zgodny z SimPy do 1e-6 s na pilocie, korytarzu i city; doba city 0,015 s zamiast 0,30 s. Decyzja 6 spełniona: fast można używać w kalibracji.
+- Następne: M2 etap 3 (Marey z symulacji, eksport do Unity).
 
 Szczegóły liczb — `data/processed/week_report/report.txt`.

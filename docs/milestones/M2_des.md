@@ -62,10 +62,10 @@ Działająca symulacja zdarzeń dyskretnych (SimPy): debug i testy na **179**, a
 
 Przy γ=0 pojazdy są niezależne poza łańcuchem i polem `u`, więc dobę da się policzyć rekursją po odcinkach w numpy (wszystkie kursy naraz, pętla tylko po pozycji w łańcuchu).
 
-- [ ] `sim.fast`: ta sama specyfikacja Δ i reguły pętli, wejście = te same tablice losowe co SimPy (wspólny generator szumu)
-- [ ] Test równoważności: te same seedy → identyczne opóźnienia SimPy vs fast (tolerancja zaokrągleń) dla pilota i korytarza
-- [ ] Przy γ>0 fast odmawia (wyjątek), żeby nikt cicho nie liczył sprzężenia od odstępu bez SimPy
-- [ ] Pomiar: czas doby pilota i city w obu ścieżkach (wejście do toru N B)
+- [x] `sim.fast`: ta sama specyfikacja Δ i reguły pętli, wejście = te same tablice losowe co SimPy (wspólny generator szumu) — `uv run simulate --engine fast` (16.10)
+- [x] Test równoważności: te same seedy → identyczne opóźnienia SimPy vs fast (tolerancja zaokrągleń) dla pilota i korytarza — 1e-6 s na syntetyce (w tym 40 bloków z przenoszeniem na pętli i zmianą linii) oraz na 14.10 dla pilota, korytarza i city
+- [x] Przy γ>0 fast odmawia (wyjątek), żeby nikt cicho nie liczył sprzężenia od odstępu bez SimPy
+- [x] Pomiar: czas doby pilota i city w obu ścieżkach (wejście do toru N B) — 14.10, sam silnik (`engine_s` w `run.json`): pilot SimPy 0,025 s, fast 0,013 s; city SimPy 0,30 s, fast 0,015 s. Całe polecenie ok. 16 s to wczytanie rozkładu.
 
 ### D. Testy weryfikacyjne
 

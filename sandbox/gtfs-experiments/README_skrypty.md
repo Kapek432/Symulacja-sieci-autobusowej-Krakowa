@@ -124,11 +124,14 @@ Doba obsługi w symulacji zdarzeń dyskretnych (SimPy), parametry w `configs/sim
 uv run simulate --date 2026-10-14 --scope pilot
 uv run simulate --date 2026-10-14 --scope corridor --seed 3
 uv run simulate --date 2026-10-14 --routes 704 503
+uv run simulate --date 2026-10-14 --scope city --engine fast
 ```
+
+- Silniki: `simpy` (referencyjny, jedyny z γ ≠ 0) i `fast` (numpy, tylko γ = 0; ten sam wynik do 1e-6 s na tych samych ziarnach, sprawdzane testem). `run.json` ma `engine_s` (sam silnik) i `elapsed_s` (cały przebieg bez wczytania rozkładu).
 
 - Wejście: `data/raw_A/static`, opcjonalnie `data/processed/chains/<dzień>.parquet`.
 - Wyjście: `data/processed/sim/<dzień>_<zakres>_<silnik>_s<ziarno>/events.parquet` (`service_date`, `vehicle_id` = klucz bloku, `trip_id`, `route_id`, `direction_id`, `stop_sequence`, `stop_id`, `arr_s`, `dep_s`, `arr_ts`, `dep_ts`, `arr_delay_s`, `dep_delay_s`, `source` = `sim`, `run_id`, `seed`) i `run.json` (parametry, liczby kursów, wersje GTFS, hash manifestu, commit).
-- Czas 14.10: city 10 279 kursów w 0,4 s silnika; całość ok. 16 s, prawie tylko wczytanie rozkładu.
+- Czas 14.10 (sam silnik): city 10 279 kursów SimPy 0,30 s, fast 0,015 s; całe polecenie ok. 16 s, prawie tylko wczytanie rozkładu.
 
 ## marey.py
 

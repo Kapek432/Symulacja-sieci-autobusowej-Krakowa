@@ -31,6 +31,31 @@ Zasady:
 
 ---
 
+## 2026-10-16 — DES etap 2: szybka ścieżka `fast` i równoważność z SimPy (M2 C2)
+
+**Kto:** Kacper Lipiec
+**Commity:** 09929cd (plany etapów 2 i 3), da7814f, 0d89378
+
+Zrobione:
+- `src/krakbus/sim/fast.py`: `run_fast` z sygnaturą `run_simpy`; `uv run simulate --engine fast`.
+- `run.json` ma osobno czas silnika (`engine_s`) i całego przebiegu (`elapsed_s`).
+
+Decyzje:
+- Przy γ = 0 przyrost na odcinku nie zależy od stanu sieci, więc opóźnienie na przystanku = odjazd kursu + suma przyrostów od jego początku; suma skumulowana raz dla całej sieci, pętla w Pythonie tylko po pozycji w bloku (do ok. 58 kroków). Odrzucona pętla po przystankach w numpy: tyle kroków, ile przystanków w najdłuższym kursie, bez zysku.
+- Tolerancja równoważności 1e-6 s, nie równość bitowa: SimPy sumuje przyrosty po kolei, fast przez różnicę sum skumulowanych (błąd rzędu 1e-9 s przy sumach do 1e7 s).
+- `fast` przy γ ≠ 0 rzuca wyjątek (decyzja 6 w planie: sprzężenie od odstępu tylko w SimPy).
+
+Sprawdzone:
+- 44 testy w `tests/sim` (13 nowych w `test_fast`, 1 w `test_run`, 3 na prawdziwym GTFS), ruff.
+- Syntetyczna sieć z pętlami miała w pierwszej wersji przenoszenie opóźnienia tylko w 2 kursach na 200; zapas skrócony do 2 min, teraz 99 na 200, więc test sprawdza obie gałęzie reguły pętli.
+- 14.10, manifest dd5a166abd0e2966, ziarno 0, `boundary: observed`: SimPy = fast do 1e-6 s dla pilota, korytarza (27 kursów brzegowych) i city. Czas samego silnika: pilot 0,025 / 0,013 s, city 0,30 / 0,015 s (SimPy / fast); mediany opóźnienia identyczne (70 i 67 s).
+
+Otwarte / dalej:
+- `fast` liczy przyrosty dla całej sieci dnia, nawet przy pilocie; przy kalibracji jednej linii można zawęzić do wierszy zakresu, jeśli to będzie wąskie gardło.
+- Etap 3: Marey z symulacji, eksport do Unity.
+
+---
+
 ## 2026-10-16 — DES etap 1: sieć dnia, silnik SimPy, `simulate`, decyzja o `u` (M2 A–D)
 
 **Kto:** Kacper Lipiec
