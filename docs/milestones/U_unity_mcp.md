@@ -10,7 +10,7 @@ Odtwarzanie wyników symulacji (i obserwacji) w Unity: replay dnia, potem rzeczy
 
 ## Zasada priorytetu
 
-Przy konflikcie kalendarza z torami D/M: **najpierw model i dane**. Tor U nie jest kasowany z planu „na 5” — idzie na ustabilizowanym eksporcie.
+Przy konflikcie z D/M/N: **nie kasujemy Unity**. Model/sieć mają pierwszeństwo przy debugu kalibracji, ale tor U idzie równolegle na eksporcie (najpierw korytarz, potem downsamplowany city). Zakresu nie ucinamy.
 
 ## Kontrakt eksportu (zróbcie wcześnie)
 
@@ -57,7 +57,8 @@ Wspólny schemat (Parquet lub JSON Lines), np.:
 ### Faza 4 — kontekst miasta (po replayu)
 
 - [ ] Import budynków (Geoportal LoD1 lub OSM) — uproszczenie OK
-- [ ] Performance: nie wciągać całego Krakowa na raz; bbox korytarza
+- [ ] Performance wizualizacji: bbox / LOD; **dane city-wide** mogą być downsamplowane (nie mylić z modelem — model ma jechać całą sieć w Pythonie)
+- [ ] Opcja: warstwa „cała sieć” jako uproszczone trajektorie + szczegół na korytarzu
 
 ### Faza 5 — interakcja (tylko jeśli Fazy 1–3 Done i raport nie płonie)
 

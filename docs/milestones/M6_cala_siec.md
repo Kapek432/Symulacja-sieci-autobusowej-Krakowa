@@ -1,56 +1,56 @@
-# M6 — „Na 5” domknięte
+# M6 — Cały Kraków + Unity
 
 **Najpóźniej:** 20.12.2026  
-**Tory:** U + M  
-**Wymaga:** M5 (wyniki do pokazania), tor U w fazach 1–3 ([U_unity_mcp.md](U_unity_mcp.md)), sensowny M4
+**Tory:** N + U + M  
+**Wymaga:** M4–M5, tor N blisko 100% coverage, tor U fazy 1–3 ([U_unity_mcp.md](U_unity_mcp.md), [N_siec_krakow.md](N_siec_krakow.md))
 
 ## Cel
 
-Spąć produkt demonstracyjny i rozszerzenie naukowe wymagane ścieżką „na 5” z `TEMAT.md`: Unity (replay + rzeczywistość ‖ symulacja) oraz szersza sieć z parametrami zbiorczymi / walidacją zagregowaną. Domknąć wizualizacje podstawowe.
+**Produkt końcowy modelu:** symulacja **całej autobusowej sieci Krakowa** z **kalibracją per linia** + pokaz Unity (replay, rzeczywistość ‖ symulacja) + spięte wizualizacje. Bez redukcji do parametrów wyłącznie zbiorczych i bez ucinania Unity.
 
-## Co wchodzi w „na 5” (checklist produktowa)
+## Checklist produktowa
 
-### A. Unity MCP — pokaz
+### A. Sieć city-wide (tor N — obowiązkowe)
 
-- [ ] Replay dnia roboczego (przyspieszenie, kolory opóźnienia)
-- [ ] Rzeczywistość ‖ symulacja na uzgodnionym fragmencie
-- [ ] Skrypt / README: jak odpalić demo (plik eksportu + Play)
-- [ ] (Opcjonalnie) budynki w bbox korytarza
-- [ ] (Opcjonalnie) przełączanie run_id scenariusza — tylko jeśli A już działa
+- [ ] `scope=city`: pełna doba, wszystkie aktywne linie
+- [ ] Rejestr parametrów per `route_id` (coverage 100% wg [N](N_siec_krakow.md))
+- [ ] Raport coverage + metryki per linia (obs vs sim)
+- [ ] Walidacja sieciowa: agregaty + próbka per-route OOS (dzień hold-out); w raporcie oddzielnie: leave-line-out (walidacja przestrzenna) i fit per linia (dopasowanie)
+- [ ] Wspólne `u` na współdzielonych odcinkach w skali miasta (sanity korelacji)
 
-Szczegóły zadań: [U_unity_mcp.md](U_unity_mcp.md).
+### B. Unity MCP — pokaz
 
-### B. Szersza sieć (nie digital twin wszystkiego)
+- [ ] Replay dnia (przyspieszenie, kolor = opóźnienie)
+- [ ] Rzeczywistość ‖ symulacja (fragment lub downsamplowana sieć)
+- [ ] README: jak odpalić demo
+- [ ] Budynki w bbox (korytarz lub centrum) — po działającym replayu
+- [ ] Opcjonalnie: przełączanie `run_id` scenariusza
 
-Cel z TEMAT: parametry zbiorcze + walidacja na wielkościach zagregowanych — nie każda linia MPK mikrokalibrowana.
+Szczegóły: [U_unity_mcp.md](U_unity_mcp.md).
 
-- [ ] Zdefiniować „szerszą sieć”: np. top N linii wg liczby zdarzeń **lub** wszystkie linie dzielące odcinki z korytarzem + próbka zewnętrzna
-- [ ] Parametry zbiorcze: wspólne rozkłady η / u / reguła pętli; ewentualnie route-level random effects uproszczone
-- [ ] Walidacja zagregowana: rozkład opóźnień sieciowo, dryf średni, korelacja na wspólnych odcinkach (nie per-trip RMSE wszędzie)
-- [ ] Krótka nota: co jest przeniesione z korytarza, co niedostrojone
-- [ ] Limit świadomy: brak pełnego dopasowania każdej linii ≠ porażka, jeśli agregaty i uczciwe limity są w raporcie
+### C. Wizualizacje podstawowe
 
-### C. Wizualizacje podstawowe (spięcie)
+- [ ] Mapa sieci (city lub gęsty subset) — kolor opóźnienia
+- [ ] Marey obs vs sim (pilot + 1–2 inne linie)
+- [ ] Heatmapa kontagionu (korytarz; opcjonalnie hotspoty city)
+- [ ] Krzywa pochłaniania na pętli
+- [ ] pydeck jako lekki 3D obok Unity
 
-- [ ] Mapa sieci z autobusami (kolor = opóźnienie) — matplotlib/plotly/pydeck
-- [ ] Marey: observed vs simulated obok siebie
-- [ ] Heatmapa kontagionu korytarza
-- [ ] Krzywa pochłaniania na pętli (obs + sim)
-- [ ] pydeck jako lekki 3D (nawet jeśli Unity jest głównym wow)
+### D. Materiał pod M7
 
-### D. Materiał pod M7 (wcześniej!)
-
-- [ ] Folder `data/processed/figures/` lub `docs/figures/` z finalnymi PNG/HTML do raportu
-- [ ] Lista 5–8 figurek „must have” na prezentację
+- [ ] `data/processed/figures/` / `docs/figures/` — finalne assety
+- [ ] 5–8 figurek must-have + 1 ścieżka demo Unity
+- [ ] Jedno zdanie wyniku sieciowego (opóźnienie / kontagion / efekt pętli)
 
 ## Definition of Done
 
-- Da się pokazać Unity demo osobie z zewnątrz w <10 min setupu.
-- Jest wynik „szerszej sieci” (agregaty + opis zakresu).
-- Wizualizacje podstawowe istnieją jako pliki, nie tylko w notebooku w RAM.
+- Cała aktywna sieć autobusowa jeździ w DES z parametrami per linia.
+- Unity demo odtwarzalne z README.
+- Wizualizacje jako pliki na dysku.
+- Brak ukrytego „zostawiliśmy pół miasta na parametry globalne bez rekordu per line”.
 
 ## Pułapki
 
-- „Cały Kraków w Unity” zjada M7 — trzymajcie bbox.
-- Nie zaczynać interaktywnych scenariuszy kosztem replayu.
-- Święta: M6 ma datę 20.12 właśnie po to, by M7 miało bufor.
+- Perf: downsampluj eksport do Unity, nie model.
+- Linie `low_n`: jawny pooling w coverage, nadal w sim.
+- Po 20.12 tylko poprawki pod M7 — nie nowe epiki sieci.

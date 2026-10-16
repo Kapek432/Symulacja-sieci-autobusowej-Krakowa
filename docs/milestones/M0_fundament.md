@@ -16,6 +16,7 @@ Utrzymać zbieranie danych i mieć wspólny punkt odniesienia: temat, skrypty, p
 - [x] Pilot 179, korytarz (169, 174, 173, 144, 124, …) z raportu
 - [x] Geoportal LoD1/LoD2 w `data/geoportal/` (pod późniejsze viz / Unity)
 - [x] `docs/PLAN_REALIZACJI.md`
+- [x] `sandbox/gtfs-experiments/gtfs_versions.py` — łączenie wersji GTFS i data obsługi (testy: `uv run pytest`)
 
 ## Stałe obowiązki (cały projekt)
 
@@ -23,7 +24,7 @@ Kolejność w praktyce po każdym „sejwie” z maszyny loggera:
 
 1. [ ] Skopiować `data/raw_A` (vehicle_positions, trip_updates, static) na maszynę roboczą
 2. [ ] Kopia zapasowa tego samego zestawu na **inny dysk**
-3. [ ] Sprawdzić dziury: odstępy `fetched_at` > ~120 s w godzinach ruchu (albo sekcja 1 `week_analysis`)
+3. [ ] Sprawdzić dziury: odstępy `fetched_at` > ~120 s w godzinach ruchu (albo sekcja 1 `week_analysis`); w wydruku `build_events` tabela „zdarzenia dzień po dniu” — kolumny `wg_daty_obslugi` i `wg_daty_lokalnej` powinny mieć ten sam rząd wielkości, a `bez_daty_obslugi` bliskie zera
 4. [ ] Jeśli dziura w dzień roboczy: zanotować datę/godziny (przydaje się przy wyłączaniu dni z kalibracji)
 5. [ ] Nie commitować surowego `raw_A` do publicznego repo (`.gitignore`)
 
@@ -47,5 +48,6 @@ Logger:
 
 ## Notatki
 
-- 9.10 w raporcie prawie pusty — nie używać jako dnia roboczego.
-- Kilka wersji GTFS w `static/` — obsługa per dzień to zadanie **M1**, nie M0.
+- „Pusty 9.10” w starym raporcie był błędem pipeline'u, nie dziurą w danych: surowe dane z 9.10 są kompletne (logger 24 h, ~44 MB pozycji jak w inne dni robocze). Stary `build_events.py` przy kursach spoza najnowszego ZIP-a przypisywał zdarzeniom datę „wczoraj”, więc dni 5–9.10 były przesunięte o jeden (4.10 = faktycznie 5.10 itd.). Naprawione w M1 A; stare liczby dzień po dniu z raportu sprzed 16.10 są nieaktualne.
+- Dziury liczymy po godzinach pracy loggera (sekcja 1 `week_analysis`), nie po liczbie zdarzeń na datę obsługi — ta druga zależy od poprawności dopasowania rozkładu.
+- Kilka wersji GTFS w `static/` — obsługa per dzień w `gtfs_versions.py` (M1).

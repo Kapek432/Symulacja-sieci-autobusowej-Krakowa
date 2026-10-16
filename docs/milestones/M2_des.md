@@ -1,12 +1,12 @@
-# M2 — DES pilota z łańcuchami
+# M2 — DES pilota + graf całego miasta
 
 **Najpóźniej:** 7.11.2026  
-**Tor:** M (+ start toru U — patrz [U_unity_mcp.md](U_unity_mcp.md))  
-**Wymaga:** sensowny graf/rozkład z GTFS; idealnie M1 Done (można zacząć szkielet wcześniej na syntetyce)
+**Tor:** M (+ start U i N — [U_unity_mcp.md](U_unity_mcp.md), [N_siec_krakow.md](N_siec_krakow.md))  
+**Wymaga:** sensowny graf/rozkład z GTFS (`gtfs_versions.load_schedule`); idealnie M1 Done (można zacząć szkielet wcześniej na syntetyce)
 
 ## Cel
 
-Działająca symulacja zdarzeń dyskretnych (SimPy): pojazd = proces realizujący łańcuch kursów linii 179 (oba kierunki), z regułą pętli i wyjściem porównywalnym 1:1 z `observed_events`.
+Działająca symulacja zdarzeń dyskretnych (SimPy): debug i testy na **179**, ale architektura od razu z **loaderem grafu i łańcuchów całego GTFS** oraz `scope=pilot|corridor|city`. Docelowo (M6) jedzie cała sieć — tu nie kalibrujemy miasta, tylko nie malujemy się w róg „hardcoded 179”.
 
 ## Wejście
 
@@ -26,17 +26,21 @@ Działająca symulacja zdarzeń dyskretnych (SimPy): pojazd = proces realizując
 
 ### A. Szkielet repo (można równolegle z końcówką M1)
 
-- [ ] Układ katalogów z `PLAN_REALIZACJI.md` (`src/`, `configs/`, `tests/`)
+- [ ] Układ katalogów z `PLAN_REALIZACJI.md` (`src/`, `configs/`, `tests/`); przenieść `gtfs_versions.py` do `src/ingest/` razem z testami
 - [ ] Zależności: `simpy`, ewentualnie `pyyaml`; `uv add …`
 - [ ] Logger zamiast `print` w `src/` (`logging.getLogger(__name__)`)
-- [ ] Jedno wejście CLI / moduł: „uruchom dobę pilota”
+- [ ] Jedno wejście CLI: doba z parametrem `scope=pilot|corridor|city` (+ opcjonalnie lista `route_id`)
 
 ### B. Graf sieci z GTFS
 
 - [ ] Wierzchołki = słupki (stop_id); krawędzie = odcinki kolejnych stop_sequence na tripie
 - [ ] Bazowy czas przejazdu z rozkładu (różnica arrival/departure kolejnych przystanków)
-- [ ] Filtrowanie do route 179 (oba `direction_id`) na start
-- [ ] Ładowanie łańcuchów: block_id → sekwencja tripów dnia
+- [ ] Loader buduje graf dla **wszystkich** route_id; filtr scope tylko przy spawnieniu pojazdów
+- [ ] `scope=pilot` → 179 (oba `direction_id`) na testy
+- [ ] Smoke `scope=city` z γ=0 i zerowym/sztywnym szumem: czy w ogóle wstaje (może być wolne — OK, profil pod N)
+- [ ] Ładowanie łańcuchów: block_id → sekwencja tripów dnia (cała sieć), łańcuchy przechodzące między liniami zachowane w całości (flaga `cross_route` z M1 C)
+- [ ] Przy `scope` węższym niż city: kurs wjeżdżający do łańcucha z linii spoza scope dostaje opóźnienie startowe z warunku brzegowego (obserwowane albo z rozkładu empirycznego), a nie zero
+- [ ] **Decyzja: struktura przestrzenna `u`** (niezależne odcinki vs korelacja sąsiednich odcinków / korytarza ulicznego) na podstawie analizy residuów z M1 D; zapisać w configu (`u.spatial: independent|neighbors|corridor`) i uzasadnienie w `docs/`
 
 ### C. Silnik SimPy
 
@@ -53,6 +57,15 @@ Działająca symulacja zdarzeń dyskretnych (SimPy): pojazd = proces realizując
   δ z rozkładu empirycznego (placeholder OK, jeśli M1 jeszcze domyka krzywą)
 - [ ] Zegar symulacji = sekundy doby; ziarno w configu
 - [ ] Zapis zdarzeń: te same kluczowe kolumny co observed (`service_date`, `trip_id`, `stop_id`, `arr_ts`/`dep_ts` lub delay, `route_id`, `vehicle_id` / block)
+
+### C2. Szybka ścieżka wektorowa (pod kalibrację)
+
+Przy γ=0 pojazdy są niezależne poza łańcuchem i polem `u`, więc dobę da się policzyć rekursją po odcinkach w numpy (wszystkie kursy naraz, pętla tylko po pozycji w łańcuchu).
+
+- [ ] `sim.fast`: ta sama specyfikacja Δ i reguły pętli, wejście = te same tablice losowe co SimPy (wspólny generator szumu)
+- [ ] Test równoważności: te same seedy → identyczne opóźnienia SimPy vs fast (tolerancja zaokrągleń) dla pilota i korytarza
+- [ ] Przy γ>0 fast odmawia (wyjątek), żeby nikt cicho nie liczył sprzężenia od odstępu bez SimPy
+- [ ] Pomiar: czas doby pilota i city w obu ścieżkach (wejście do toru N B)
 
 ### D. Testy weryfikacyjne
 
@@ -74,13 +87,15 @@ Działająca symulacja zdarzeń dyskretnych (SimPy): pojazd = proces realizując
 
 ## Definition of Done
 
-- `uv run …` odpala pełną dobę 179 w rozsądnym czasie (orientacyjnie: minuty, nie godziny).
-- Testy z sekcji D przechodzą.
-- Jest plik wyników + Marey.
-- Tor U może podłączyć pierwszy replay.
+- `scope=pilot` (179): pełna doba w rozsądnym czasie; testy z sekcji D zielone; Marey + wyniki.
+- Loader obsługuje graf/łańcuchy całego GTFS, w tym łańcuchy międzyliniowe; CLI ma `scope` (city może być wolne, ale nie jest „niezaimplementowane”).
+- Szybka ścieżka przechodzi test równoważności z SimPy.
+- Decyzja o strukturze przestrzennej `u` zapisana.
+- Tor U ma pierwszy eksport; tor N może zacząć coverage / batche.
 
 ## Pułapki
 
 - Nie kalibrować parametrów w M2 — tu chodzi o poprawność mechaniki.
-- Nie budować od razu całego korytarza (to M4).
+- Nie hardcodować 179 w środku silnika (tylko w configu scope).
 - Nie blokować M2 na perfekcyjnym M1: szkielet i testy zerowego szumu idą na samym GTFS.
+- Dwie ścieżki obliczeń bez testu równoważności = dwa różne modele; test jest warunkiem użycia fast w kalibracji.

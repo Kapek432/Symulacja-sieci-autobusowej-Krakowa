@@ -2,7 +2,7 @@
 
 **Najpóźniej:** 31.12.2026  
 **Tor:** wszyscy  
-**Wymaga:** artefakty M3–M6; draft można zacząć wcześniej (zalecane od M4)
+**Wymaga:** artefakty M3–M6; draft rozdziałów dane / model / weryfikacja / kalibracja powstaje w M4 H — tutaj tylko uzupełnienie i redakcja
 
 ## Cel
 
@@ -21,14 +21,14 @@ Oddawalny pakiet: raport końcowy, repo odtwarzalne, prezentacja / FAQ. Bez dopi
 ### A. Raport — szkielet treści
 
 - [ ] Cel i pytania badawcze (z TEMAT, bez rozdmuchiwania)
-- [ ] Dane: GTFS + GTFS-RT, okres, luki, match wersji rozkładu
-- [ ] Model: opis ODD-like (encje, procesy, skala, wejścia/wyjścia, stochastyka)
-- [ ] Weryfikacja (testy M2)
-- [ ] Kalibracja (S, metoda, parametry, γ)
-- [ ] Walidacja (OOS, ablacje, baseline’y) — osobno „z konstrukcji” vs nietrywialne
-- [ ] Scenariusze + wrażliwość warunkowych
-- [ ] Unity / viz (co pokazano)
-- [ ] Ograniczenia i ryzyka (γ≈0, długość zbierania, założenia S4/S5, słabe średnie przenoszenie)
+- [ ] Dane: GTFS + GTFS-RT, okres, luki, match wersji rozkładu (feed kroczący, reguła z `gtfs_versions.py`), dni specjalne
+- [ ] Model: opis ODD-like (encje, procesy, skala, wejścia/wyjścia, stochastyka), struktura przestrzenna `u`
+- [ ] Weryfikacja (testy M2, test równoważności szybkiej ścieżki z SimPy)
+- [ ] Kalibracja (S, metoda, γ, hierarchia global → grupa → linia, `u` z korytarza, **per linia / coverage całej sieci**)
+- [ ] Walidacja (OOS dni, leave-line-out, ablacje, baseline’y) — „z konstrukcji” vs nietrywialne; metryki sieciowe; jawnie: fit per linia ≠ walidacja
+- [ ] Scenariusze (korytarz + warianty city) + wrażliwość warunkowych
+- [ ] Unity / viz
+- [ ] Ograniczenia (γ≈0, okres danych i liczba wersji rozkładu, S4/S5, low_n pooling, perf city-wide, warunek brzegowy łańcuchów międzyliniowych, założona struktura przestrzenna `u`)
 - [ ] Wnioski — odpowiedzi 1:1 na pytania badawcze
 
 ### B. Odtwarzalność
@@ -40,13 +40,16 @@ Oddawalny pakiet: raport końcowy, repo odtwarzalne, prezentacja / FAQ. Bez dopi
 
 ### C. Prezentacja
 
-- [ ] Konspekt: problem → dane → model (łańcuchy + u) → wynik walidacji → scenariusze → Unity
+- [ ] Konspekt: problem → dane → model → kalibracja per linia / cała sieć → walidacja → scenariusze → Unity
 - [ ] FAQ przygotowane:
   - Dlaczego to nie „rozkład + szum”?
+  - Jak skalibrowaliście **wszystkie** linie (job per route, pooling low_n)?
+  - Skoro wszystkie linie są skalibrowane, gdzie jest walidacja na liniach spoza kalibracji? (leave-line-out zamrożony przed fitem)
+  - Skąd wiecie, że `u` to zakłócenie wspólne, a nie dryf linii? (wspólna kalibracja na korytarzu, ablacja bez `u`)
   - Co z γ / zbijaniem?
   - Czy łańcuchy mają efekt przy dużym zapasie?
   - Co jest założeniem w scenariuszach warunkowych?
-  - Jak krótki okres danych ogranicza wnioski?
+  - Jak krótki okres danych i perf city-wide ograniczają wnioski?
 - [ ] Próbna prezentacja wewnątrz zespołu (timer)
 
 ### D. Freeze
