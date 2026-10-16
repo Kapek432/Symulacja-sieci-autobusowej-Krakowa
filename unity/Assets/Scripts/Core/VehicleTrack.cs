@@ -55,14 +55,12 @@ namespace BusReplay.Core
 
         TrackSample Make(int a, int b, float f)
         {
-            float da = _delay[a], db = _delay[b];
-            float delay = (float.IsNaN(da) || float.IsNaN(db)) ? da : Mathf.Lerp(da, db, f);
             return new TrackSample
             {
                 Visible = true,
                 Pos = new Vector2(Mathf.Lerp(_x[a], _x[b], f), Mathf.Lerp(_z[a], _z[b], f)),
                 HeadingDeg = Mathf.LerpAngle(_bearing[a], _bearing[b], f),
-                DelayS = delay,
+                DelayS = _delay[a],  // z probki a, bez interpolacji
                 Layover = _layover[a],
                 RouteId = _route[a],
                 TripId = _trip[a],

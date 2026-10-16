@@ -60,6 +60,16 @@ namespace BusReplay.Core
             return new PositionsMeta { SchemaVersion = m.SchemaVersion, Gtfs = m.Gtfs, TMin = m.TMin, TMax = m.TMax };
         }
 
+        // brak kierunku: bierzemy poprzedni znany, a wiodace braki z pierwszego znanego (calosc pusta -> 0)
+        static void FillBearings(float[] br)
+        {
+            int first = -1;
+            for (int i = 0; i < br.Length; i++) if (!float.IsNaN(br[i])) { first = i; break; }
+            if (first < 0) { Array.Clear(br, 0, br.Length); return; }
+            for (int i = 0; i < first; i++) br[i] = br[first];
+            for (int i = first + 1; i < br.Length; i++) if (float.IsNaN(br[i])) br[i] = br[i - 1];
+        }
+
         /// <summary>Parsuje wiersze JSONL; bledne wiersze sa liczone w SkippedLines, puste ignorowane.</summary>
         public static PositionsData Parse(IEnumerable<string> lines)
         {
@@ -113,11 +123,12 @@ namespace BusReplay.Core
                 for (int k = 0; k < n; k++)
                 {
                     var r = rows[idx[k]];
-                    t[k] = r.T.Value; x[k] = r.X.Value; z[k] = r.Z.Value; br[k] = r.Bearing ?? 0f;
+                    t[k] = r.T.Value; x[k] = r.X.Value; z[k] = r.Z.Value; br[k] = r.Bearing ?? float.NaN;
                     dl[k] = r.DelayS ?? float.NaN; lay[k] = r.Layover ?? false;
                     rt[k] = r.RouteId == null ? null : string.Intern(r.RouteId);
                     tr[k] = r.TripId == null ? null : string.Intern(r.TripId);
                 }
+                FillBearings(br);
                 data.Tracks[kv.Key] = new VehicleTrack(kv.Key, t, x, z, br, dl, lay, rt, tr);
             }
 

@@ -46,6 +46,13 @@ namespace BusReplay.Tests
             Assert.AreEqual("a1", tr.Sample(5).TripId);
         }
 
+        [Test] public void Delay_from_sample_without_interpolation()
+        {
+            var tr = new VehicleTrack("v", new[] { 0d, 10 }, new float[2], new float[2], new float[2],
+                                      new[] { 0f, 100f }, new bool[2], new string[2], new string[2]);
+            Assert.AreEqual(0f, tr.Sample(5).DelayS, 1e-3);
+        }
+
         [Test] public void Duplicate_timestamp_no_nan()
         {
             var d = Track(t: new[] { 0d, 0, 10 }, x: new[] { 0f, 5, 10 });

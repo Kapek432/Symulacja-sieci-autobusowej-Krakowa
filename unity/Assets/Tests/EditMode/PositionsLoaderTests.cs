@@ -37,6 +37,13 @@ namespace BusReplay.Tests
         [Test] public void Meta_wrong_version_throws() =>
             Assert.Throws<ReplayDataException>(() => PositionsLoader.ParseMeta("{\"schema_version\":2}"));
 
+        [Test] public void Null_bearing_filled_from_previous()
+        {
+            string R(int t, string b) => "{\"t\":" + t + ",\"sim_time_s\":" + (27000 + t) + ",\"vehicle_id\":\"v9\",\"trip_id\":\"a\",\"route_id\":\"1\",\"x\":" + t + ",\"z\":0,\"bearing\":" + b + ",\"delay_s\":0,\"layover\":false}";
+            var p = Parse(R(0, "90"), R(10, "null"), R(20, "90"));
+            Assert.AreEqual(90f, p.Tracks["v9"].Sample(10).HeadingDeg, 1e-3);
+        }
+
         [Test] public void Meta_parses() 
         {
             var m = PositionsLoader.ParseMeta("{\"schema_version\":1,\"gtfs\":\"g.zip\",\"t_min\":5,\"t_max\":9,\"rows\":3}");
