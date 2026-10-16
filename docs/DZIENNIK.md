@@ -34,7 +34,7 @@ Zasady:
 ## 2026-10-16 — złożoność na trzech filarach: decyzja 9 (plan M3–M5)
 
 **Kto:** Kacper Lipiec
-**Commity:** (ten wpis)
+**Commity:** a421509
 
 Zrobione:
 - Decyzja 9 w `docs/PLAN_REALIZACJI.md`; zadania w `M3_kalibracja.md` (E), `M4_walidacja.md` (C2, D), `M5_scenariusze.md` (E, DoD).
