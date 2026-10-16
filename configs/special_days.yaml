@@ -1,0 +1,33 @@
+# Dni nietypowe: poza kalibracja i walidacja OOS, raportowane osobno (decyzja 7 w docs/PLAN_REALIZACJI.md).
+# decision: exclude = poza analizami, regime = osobny rezim, check = sprawdzic w danych i zdecydowac
+days:
+  - date: "2026-10-25"
+    reason: zmiana czasu CEST -> CET (doba 25 h)
+    decision: check
+  - date: "2026-10-31"
+    reason: sobota przed Wszystkich Swietych
+    decision: check
+  - date: "2026-11-01"
+    reason: Wszystkich Swietych
+    decision: exclude
+  - date: "2026-11-02"
+    reason: poniedzialek po Wszystkich Swietych (Zaduszki)
+    decision: check
+  - date: "2026-11-10"
+    reason: dzien przed Swietem Niepodleglosci
+    decision: check
+  - date: "2026-11-11"
+    reason: Swieto Niepodleglosci
+    decision: exclude
+  - date: "2026-11-12"
+    reason: dzien po Swiecie Niepodleglosci
+    decision: check
+  - date: "2026-12-24"
+    reason: Wigilia
+    decision: exclude
+  - date: "2026-12-25"
+    reason: Boze Narodzenie
+    decision: exclude
+  - date: "2026-12-26"
+    reason: Boze Narodzenie (drugi dzien)
+    decision: exclude

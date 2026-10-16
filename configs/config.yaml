@@ -1,0 +1,33 @@
+data:
+  raw_dir: data/raw_A
+  processed_dir: data/processed
+  timezone: Europe/Warsaw
+
+events:
+  # przerwa dluzsza niz to miedzy raportami statusu 1 = nowy epizod postoju
+  episode_gap_s: 600
+  # maksymalna niepewnosc czasu przyjazdu/odjazdu uznawana za dobra
+  unc_ok_s: 30
+  # |opoznienie przyjazdu| powyzej tego = outlier (delay_class), poza arr_good/dep_good
+  outlier_s: 1800
+  # |opoznienie| powyzej tego = kurs z usluga innego dnia; probujemy przepiac na odpowiednik
+  wrong_day_min_s: 43200
+
+chains:
+  # minimalny postoj na petli; opoznienie > zapas - l_min przechodzi na nastepny kurs
+  # (60 s = najlepsze dopasowanie w sekcji 6 week_analysis, 16.10)
+  l_min_s: 60
+
+days:
+  # odstep miedzy migawkami loggera uznawany za dziure
+  logger_gap_s: 120
+  # godziny lokalne [od, do), w ktorych dziury dyskwalifikuja dzien
+  service_hours: [5, 23]
+  max_gap_min: 30
+  min_events: 500
+  # dzien D jest pelny dopiero, gdy sa dane do tej godziny lokalnej doby D+1 (kursy nocne)
+  night_end_hour: 4
+  special_days_file: configs/special_days.yaml
+  split_file: configs/days_split.yaml
+  # docelowy udzial dni walidacyjnych w kazdej warstwie (typ dnia x pokolenie rozkladu) propozycji
+  valid_fraction: 0.34

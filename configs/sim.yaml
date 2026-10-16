@@ -1,0 +1,39 @@
+# Parametry symulacji (M2). Wartosci modelu sa robocze; kalibracja w M3.
+scopes:
+  pilot: ["179"]
+  corridor: ["179", "169", "174", "173", "144", "124"]
+  # null = wszystkie linie aktywne w dniu
+  city: null
+
+# pory dnia [od, do) w godzinach doby GTFS (modulo 24); reszta to "poza"
+periods:
+  szczyt_rano: [7, 9]
+  szczyt_pop: [15, 18]
+
+model:
+  # dryf a_p [s na minute rozkladowego czasu odcinka]; ok. 3,6 s/min to dryf mediany z M1
+  drift_s_per_min: {szczyt_rano: 3.5, szczyt_pop: 4.5, poza: 3.0}
+  # efekt dnia e_d ~ N(0, sd), jedna wartosc na przebieg
+  day_effect_sd_s: 0.0
+  u:
+    # decyzja 5 (M2, 16.10): u wspolne dla linii na tym samym odcinku, niezalezne miedzy
+    # odcinkami (M1: ten sam odcinek 0,29, sasiedni 0,04, dalej jak losowe); AR(1) po oknach
+    spatial: independent
+    window_s: 900
+    sigma_s: 8.0
+    rho: 0.7
+  eta:
+    # t-Studenta (ciezki ogon przyrostow, kurtoza w danych > 100)
+    df: 3.0
+    scale_s: 15.0
+  loop:
+    l_min_s: 60
+    # delta ~ N(mean, sd): resztkowe spoznienie odjazdu z petli
+    delta_mean_s: 20.0
+    delta_sd_s: 20.0
+  gamma: 0.0
+
+# warunek brzegowy kursu, ktorego poprzednik w bloku jest spoza zakresu:
+# observed = arr_end_delay_s poprzednika z chains/ dnia i regula petli; delta = losowe delta
+boundary: observed
+seed: 0

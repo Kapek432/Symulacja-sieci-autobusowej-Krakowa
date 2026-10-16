@@ -10,7 +10,7 @@ Odtwarzanie wyników symulacji (i obserwacji) w Unity: replay dnia, potem rzeczy
 
 ## Zasada priorytetu
 
-Przy konflikcie kalendarza z torami D/M: **najpierw model i dane**. Tor U nie jest kasowany z planu „na 5” — idzie na ustabilizowanym eksporcie.
+Przy konflikcie z D/M/N: **nie kasujemy Unity**. Model/sieć mają pierwszeństwo przy debugu kalibracji, ale tor U idzie równolegle na eksporcie (najpierw korytarz, potem downsamplowany city). Zakresu nie ucinamy.
 
 ## Kontrakt eksportu (zróbcie wcześnie)
 
@@ -25,10 +25,10 @@ Wspólny schemat (Parquet lub JSON Lines), np.:
 | `source` | `sim` \| `obs` |
 | `run_id`, `seed` | reprodukowalność |
 
-- [ ] Opisać kontrakt w `docs/` lub `src/viz/EXPORT.md` (1 strona)
-- [ ] Exporter w Pythonie (`src/viz/export_unity.py` lub podobny)
-- [ ] Jedna próbka pliku w `data/processed/unity_samples/` (mała, do gita OK jeśli bez surowego feedu)
-- [ ] Wersjonowanie schematu (`schema_version: 1`)
+- [x] Opisać kontrakt w `docs/` lub `src/viz/EXPORT.md` (1 strona) — [`../EXPORT_UNITY.md`](../EXPORT_UNITY.md) (16.10)
+- [x] Exporter w Pythonie (`src/viz/export_unity.py` lub podobny) — `uv run export-unity` (`krakbus.viz.export_unity`), parquet albo JSON Lines
+- [x] Jedna próbka pliku w `data/processed/unity_samples/` (mała, do gita OK jeśli bez surowego feedu) — próbki lokalnie (`2026-10-14_pilot_simpy_s0`, `obs_2026-10-14_179`), nie w gicie zgodnie z zasadą repo „bez `data/`”; każdy odtwarza je dwoma komendami z kontraktu
+- [x] Wersjonowanie schematu (`schema_version: 1`) — w `<nazwa>.meta.json`
 
 ## Backlog Unity MCP
 
@@ -57,7 +57,8 @@ Wspólny schemat (Parquet lub JSON Lines), np.:
 ### Faza 4 — kontekst miasta (po replayu)
 
 - [ ] Import budynków (Geoportal LoD1 lub OSM) — uproszczenie OK
-- [ ] Performance: nie wciągać całego Krakowa na raz; bbox korytarza
+- [ ] Performance wizualizacji: bbox / LOD; **dane city-wide** mogą być downsamplowane (nie mylić z modelem — model ma jechać całą sieć w Pythonie)
+- [ ] Opcja: warstwa „cała sieć” jako uproszczone trajektorie + szczegół na korytarzu
 
 ### Faza 5 — interakcja (tylko jeśli Fazy 1–3 Done i raport nie płonie)
 

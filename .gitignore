@@ -1,4 +1,31 @@
+# Local / secret files
 local/
+.env
+.env.*
+AGENTS.local.md
+.cursor/rules/git-commits.mdc
+
+# Data
+data/**
+!data/geoportal/
+!data/geoportal/README.md
+!data/geoportal/images/
+!data/geoportal/images/**
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+
+# OS
+.DS_Store
+
 data/geoportal/LoD*/*
 data/processed/*
 data/raw_A/*

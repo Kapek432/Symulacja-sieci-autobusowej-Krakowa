@@ -1,16 +1,40 @@
 [project]
 name = "symulacja-sieci-autobusowej-krakowa"
 version = "0.1.0"
-description = "Add your description here"
+description = "Symulacja propagacji opoznien w sieci autobusowej Krakowa (DES, GTFS-Realtime)"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
     "fastparquet>=2026.9.0",
-    "gtfs-realtime-bindings>=3.0.0",
     "matplotlib>=3.11.2",
     "numpy>=2.5.4",
     "pandas>=3.0.6",
     "pyarrow>=26.0.0",
-    "requests>=2.34.2",
-    "ruff>=0.17.0",
+    "pyyaml>=6.0.3",
+    "simpy>=4.1.2",
 ]
+
+[project.scripts]
+build-events = "krakbus.observed.pipeline:main"
+events-quality = "krakbus.observed.quality:main"
+route-ranking = "krakbus.observed.routes:main"
+propose-split = "krakbus.observed.split:main"
+simulate = "krakbus.sim.run:main"
+marey = "krakbus.viz.marey:main"
+export-unity = "krakbus.viz.export_unity:main"
+
+[build-system]
+requires = ["uv_build>=0.9.17,<0.10"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "krakbus"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "ruff>=0.17.1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
