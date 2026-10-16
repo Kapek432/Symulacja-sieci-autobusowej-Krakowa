@@ -1,6 +1,7 @@
 # M1 — Dane obserwowane wiarygodne
 
 **Najpóźniej:** 24.10.2026  
+**Status:** Done (16.10.2026). Otwarte punkty poniżej nie blokują M3: dwa czekają na dane (25.10, grudzień), krzywa pochłaniania z `chains/` przechodzi do modułu kalibracji pętli w M3, reszta jest opcjonalna (`move_ts`, sekcja E).  
 **Tor:** D  
 **Blokuje:** sensowną kalibrację (M3) i uczciwe fakty stylizowane pod model
 
@@ -41,7 +42,7 @@ Struktura feedu ZTP (sprawdzone na 4 wersjach): feed kroczący, `service_id`/`tr
 - [x] Przeliczyć `observed_events` od zera
 - [x] Smoke: wydruk `build_events` „zdarzenia dzień po dniu” (data obsługi vs data lokalna, zdarzenia bez daty, wersja kalendarza); sekcja 2 `week_analysis` z sensownym udziałem dla 5–9.10
 - [x] Zmiana czasu 25.10: czasy GTFS liczone od „południe − 12 h” (doba 25 h nie przesuwa opóźnień); test w `tests/ingest/test_gtfs_versions.py`. Dobę 25.10 i tak oznaczyć jako specjalną (patrz D)
-- [ ] Po pierwszym sync po 25.10: sprawdzić w `days.csv` i `events-quality`, że 25–26.10 nie mają spadku liczby zdarzeń ani skoku |opóźnienia| ≈ 1 h
+- [ ] (czeka na dane) Po pierwszym sync po 25.10: sprawdzić w `days.csv` i `events-quality`, że 25–26.10 nie mają spadku liczby zdarzeń ani skoku |opóźnienia| ≈ 1 h
 - [x] Przenieść `gtfs_versions.py` do `src/krakbus/ingest/` przy szkielecie repo (M2 A)
 
 ### A2. Przetwarzanie przyrostowe (dane napływają cały czas)
@@ -77,7 +78,7 @@ Zrobione 16.10: `src/krakbus/observed/chains.py`, wynik `data/processed/chains/Y
 - [x] Dla (`vehicle_id`, `service_date`) uporządkowana lista kursów (`chain_idx`), z planem bloku (`block_id`, `blk_idx`, `block_next_trip`) i flagą `follows_block`
 - [x] Kolumny: `chain_idx`, `route_id`, `direction_id`, `trip_id`, `start_s`/`end_s` (rozkład), `first_ts`/`last_ts` (obserwacja), zapas rozkładowy `layover_sched_s` = start następnego − koniec tego, `gap_obs_s`, `arr_end_delay_s` (przyjazd na ostatni przystanek, `arr_ok`), `dep_first_delay_s` (ostatni odjazd z pierwszego, `dep_ok`), `next_dep_first_delay_s`, `carried` = `arr_end_delay_s > layover_sched_s − l_min_s` (`l_min_s` = 60 w `configs/config.yaml`)
 - [x] Flaga `cross_route` (następny kurs pojazdu na innej linii); udział per linia w `events-quality`. 5,3% przejść ogółem; dla większości linii 0–2,5%, ale np. 151 ma 17,5% — kandydaci na warunek brzegowy w M3 D
-- [ ] Krzywa pochłaniania z `chains/` zamiast z `week_analysis` (sekcja 6 liczy ją już na poprawionych zdarzeniach; przenieść, gdy powstanie moduł kalibracji pętli)
+- [ ] (→ M3, moduł kalibracji pętli) Krzywa pochłaniania z `chains/` zamiast z `week_analysis` (sekcja 6 liczy ją już na poprawionych zdarzeniach)
 - [x] `block_id` zgodny z pojazdem: 0,990 (8 dni roboczych, miara jak w sekcji 6; w starym raporcie 0,991). Ostrzejsza `follows_block` (następny zaobserwowany kurs = następny w bloku): 0,982. Reset X 0,84 i przenoszenie OLS 0,138 (sekcja 6: 0,84 i 0,13; różnica, bo odjazd z pierwszego przystanku to teraz ostatni epizod postoju, a nie pierwszy)
 
 ### D. Fakty stylizowane + tooling raportu
@@ -86,14 +87,14 @@ Zrobione 16.10: `src/krakbus/observed/chains.py`, wynik `data/processed/chains/Y
 - [x] Naprawić crash KS w `week_analysis` (dni bez dobrych zdarzeń w `WORK` są pomijane z komunikatem)
 - [x] Przegonić raport na poprawionych zdarzeniach dla pełnych dni roboczych (9 dni: 5–9.10, 12–15.10)
 - [x] Potwierdzić na ≥3 dniach: dryf wzdłuż trasy, wzrost rozrzutu, slope σ_e, krzywa pętli, korelacja między liniami (stan: `PLAN_REALIZACJI.md`, „Stan na 16.10”)
-- [ ] Bootstrap po kursach dla CI przy kluczowych statystykach (przynajmniej dryf / reset)
-- [ ] Notebook lub skrypt: Marey rzeczywistości dla 179 (jeden dzień)
+- [x] Bootstrap po kursach dla CI przy kluczowych statystykach (sekcja 12 `week_analysis`, B = 200; klaster = kurs w dobie dla dryfu, pojazd w dobie dla pętli). 8 dni roboczych: dryf mediany 145 s [143, 147], std ostatnia/pierwsza piąta 1,77 [1,74, 1,80], reset X 0,836 [0,827, 0,840], przenoszenie OLS 0,129 [0,121, 0,138]. Przedziały z próby są wąskie; zmienność między dniami (KS do 0,108) trzeba oceniać osobno, np. leave-day-out w M3
+- [x] Skrypt: Marey rzeczywistości (`sandbox/gtfs-experiments/marey.py [linia] [dzień]`, domyślnie 179 i ostatni pełny dzień roboczy; rozkład szary, obserwacja wg pojazdu)
 - [x] Kolumna `role` w `days.csv` (`unassigned` do zamrożenia, potem `calib` / `valid` / `excluded` z `configs/days_split.yaml`; nowe dni `complete` po zamrożeniu dostają `valid`)
-- [ ] Propozycja split dni: zbalansowana względem wersji rozkładu (pokolenia 20261005, 20261010, 20261013, …) i dni tygodnia, a nie „pierwsze → kalibracja, późniejsze → walidacja” (zaktualizować gdy przybędą dni)
+- [x] Propozycja split dni: zbalansowana względem wersji rozkładu i dni tygodnia (`uv run propose-split` → `data/processed/days_split_proposal.yaml`; warstwy typ dnia × pokolenie, w każdej ~1/3 dni do walidacji rozłożone w czasie, `days.valid_fraction` = 0,34). Stan 16.10: calib 5, 7, 9, 12, 13.10 i weekend 10–11.10; valid 6.10 (wt), 8.10 (czw), 14.10 (śr). Weekend i pokolenie 20261010 mają po jednym dniu roboczym, więc na razie bez walidacji; przeliczać po każdym wgraniu aż do zamrożenia w M3
 - [x] `configs/special_days.yaml`: 25.10 (zmiana czasu), 31.10–2.11 (Wszystkich Świętych), 10–12.11 (Święto Niepodległości), 24–26.12; z decyzją: `exclude` / `regime` / `check`
-- [ ] Uzupełnić `special_days.yaml` o okres przedświąteczny w grudniu (od kiedy ruch odbiega od normy — sprawdzić w danych)
-- [ ] Eksport rankingu linii (zdarzenia, dni, med opóźnienia, udział `cross_route`) → `data/processed/route_ranking.csv` pod tor N
-- [ ] Korelacja residuów opóźnień na odcinkach sąsiednich vs odległych (wejście do decyzji o strukturze przestrzennej `u`, M2 B)
+- [ ] (czeka na dane) Uzupełnić `special_days.yaml` o okres przedświąteczny w grudniu (od kiedy ruch odbiega od normy — sprawdzić w danych)
+- [x] Eksport rankingu linii → `data/processed/route_ranking.csv` (`uv run route-ranking`; zdarzenia `arr_good` z pełnych dni roboczych, dni, kursy, pojazdy, mediana i p90 opóźnienia, skumulowany udział zdarzeń sieci, udział `cross_route` i `carried`). Stan 16.10 (8 dni): 160 linii; 50% zdarzeń daje 26 linii, 70% daje 49. Top: 179, 704, 144, 139, 173, 174, 304, 164. Wysoki `cross_route` mają 194, 169 i 494 (0,36–0,42), co jest ważne dla batchy N, bo 169 jest w korytarzu
+- [x] Korelacja residuów na odcinkach sąsiednich vs odległych (sekcja 13 `week_analysis`): residuum przyrostu opóźnienia na odcinku, średnia linii w oknie 15 min, pary tylko między różnymi liniami. Ten sam odcinek 0,29, sąsiedni 0,04, 2 odcinki dalej 0,01, od 3 w górę 0,002–0,008, czyli tyle co losowe pary w tym samym oknie (0,005). Wejście do decyzji M2 B
 
 ### E. Jak będzie czas (nie blokuje M1 Done)
 

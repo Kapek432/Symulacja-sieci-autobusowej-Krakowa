@@ -31,6 +31,40 @@ Zasady:
 
 ---
 
+## 2026-10-16 — domknięcie M1: ranking linii, podział dni, CI, struktura u, Marey (M1 D)
+
+**Kto:** Kacper Lipiec
+**Commity:** d42c2e5
+
+Zrobione:
+- `uv run route-ranking` (`src/krakbus/observed/routes.py`) → `data/processed/route_ranking.csv`.
+- `uv run propose-split` (`src/krakbus/observed/split.py`) → `data/processed/days_split_proposal.yaml` w formacie `days_split.yaml`; nowy próg `days.valid_fraction` = 0,34.
+- `week_analysis`: filtry `arr_good`/`dep_good` zamiast własnego progu 1800 s; sekcja 12 (bootstrap klastrowy), sekcja 13 (korelacja residuów przyrostów na odcinkach).
+- `sandbox/gtfs-experiments/marey.py`: Marey rozkład vs obserwacja dla linii i dnia.
+- M1 oznaczony jako Done.
+
+Decyzje:
+- Ranking liczy tylko zdarzenia `arr_good` z pełnych dni roboczych; weekend to inny reżim i zaniżałby liczby linii dziennych.
+- Podział dni: warstwy typ dnia × pokolenie rozkładu, dni walidacyjne rozłożone w czasie w każdej warstwie. Odrzucone „pierwsze dni → calib, ostatnie → valid”, bo walidacja wpadałaby wtedy w całości w jedno pokolenie. Warstwa jednodniowa idzie do kalibracji (weekend, 12.10).
+- Dni bez statusu `complete` nie trafiają do `excluded` w propozycji: po zamrożeniu dzień `provisional` zostałby wykluczony na zawsze.
+- Bootstrap: klaster = kurs w dobie (dryf) i pojazd w dobie (pętla), bo zdarzenia jednego kursu i kolejne pary jednego pojazdu nie są niezależne.
+- Korelacja `u` tylko między różnymi liniami w oknie 15 min: para z tym samym autobusem dawałaby ujemną korelację z szumu wspólnego czasu przyjazdu na przystanku łączącym odcinki. Decyzja o strukturze `u` zostaje w M2; dane przemawiają za `independent` ze wspólnym `u` na odcinku dzielonym przez linie (notka w `M2_des.md`).
+- Spearman liczony jako Pearson na rangach, bez dodawania scipy.
+
+Sprawdzone:
+- 45 testów (`test_routes`, `test_split`), ruff na `src tests`.
+- Manifest dd5a166abd0e2966, dni robocze complete 5–9, 12–14.10: ranking 160 linii, 50% / 70% zdarzeń = 26 / 49 linii; wysoki `cross_route` 194, 169, 494 (0,36–0,42); 704 `carried` 0,96 (krótkie zapasy, zgodnie z pułapką w M1).
+- Raport: kluczowe liczby jak przed zmianą filtra (dryf 59 → 204 s, reset X 0,84, OLS 0,129, block_id 0,991); KS max 0,108. CI 95%: dryf 145 s [143, 147], reset X [0,827, 0,840], OLS [0,121, 0,138].
+- Korelacja residuów: ten sam odcinek 0,29 (n = 498 tys. par), k = 1: 0,04, k = 2: 0,01, k ≥ 3: 0,002–0,008, losowe 0,005.
+- Marey 179 dla 14.10 obejrzany: kursy monotoniczne, obserwacja przy rozkładzie (błąd sortowania `stop_sequence` jako tekstu naprawiony przed commitem).
+
+Otwarte / dalej:
+- Po 25.10: kontrola zmiany czasu w `days.csv` i `events-quality`; w grudniu okres przedświąteczny w `special_days.yaml`.
+- Propozycję podziału przeliczać po każdym wgraniu aż do zamrożenia w M3.
+- Krzywa pochłaniania z `chains/` przy module kalibracji pętli (M3).
+
+---
+
 ## 2026-10-16 — jakość zdarzeń: wrong_service_day i jeden filtr (M1 B)
 
 **Kto:** Kacper Lipiec

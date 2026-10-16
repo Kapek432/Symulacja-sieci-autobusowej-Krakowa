@@ -171,6 +171,7 @@ Pełne checklisty: [`milestones/`](milestones/README.md).
 - **Zmiana względem planu z 14.10:** docelowo **cała sieć + kalibracja per linia**, bez ucinania Unity/scenariuszy; dodany tor **N** i wyższa gęstość zadań; decyzje metodologiczne 2–6 (leave-line-out, `u` z korytarza, łańcuchy międzyliniowe, struktura przestrzenna `u`, szybka ścieżka).
 - **Łańcuchy kursów** (16.10, M1 C): `data/processed/chains/`, łańcuch obserwowany per pojazd; `block_id` zgodny z pojazdem w 99%, przejścia na inną linię 5,3% (większość linii 0–2,5%, 151: 17,5%).
 - **Jakość zdarzeń** (16.10, M1 B): jeden filtr `delay_class` / `arr_good` / `dep_good`; kursy zgłaszane z `trip_id` innej doby przepinane na bliźniaka (5018 zdarzeń), bez bliźniaka zostaje 36. Noce graniczne pokoleń mają w RT lukę w godz. 2–3 (tylko linie nocne).
-- Najpilniejsze w M1: ranking linii pod tor N, split dni, fakty stylizowane na `arr_good`.
+- **M1 Done** (16.10): `route_ranking.csv` (160 linii; 26 linii daje 50% zdarzeń, 49 daje 70%), robocza propozycja podziału dni (valid 6, 8, 14.10; reszta calib), raport na `arr_good` z CI z bootstrapu (dryf 145 s [143, 147], reset X 0,836 [0,827, 0,840]), Marey dla dowolnej linii. Korelacja residuów między liniami: ten sam odcinek 0,29, sąsiedni 0,04, dalej jak losowe, co jest wejściem do decyzji 5 w M2. Czeka na dane: kontrola 25.10 i okres przedświąteczny.
+- Następne: M2 (DES pilota, graf miasta, decyzja o strukturze `u`).
 
 Szczegóły liczb — `data/processed/week_report/report.txt`.

@@ -47,12 +47,17 @@ Logger działa na osobnym komputerze (`C:\gtfs`, zadanie ZTP-logger). Dane z nie
 1. `logger_autobusy.py` - ciągle, zbiera dane.
 2. `uv run build-events` - po każdym dociągnięciu nowych danych; przelicza tylko zmienione dni.
 3. `uv run events-quality` - raport jakości ostatnich 3 dni `complete` (albo `--days ...`).
-4. `week_analysis.py` - pełny raport na dniach `complete`.
+4. `uv run route-ranking` - ranking linii (`data/processed/route_ranking.csv`).
+5. `uv run propose-split` - robocza propozycja podziału dni (`data/processed/days_split_proposal.yaml`).
+6. `week_analysis.py` - pełny raport na dniach `complete`; `marey.py` - wykres Mareya jednej linii.
 
 ```
 uv run build-events
 uv run events-quality
+uv run route-ranking
+uv run propose-split
 uv run sandbox/gtfs-experiments/week_analysis.py 179
+uv run sandbox/gtfs-experiments/marey.py 179 2026-10-14
 ```
 
 ## Zależności
@@ -101,6 +106,18 @@ Do analiz: `from krakbus.observed.store import load_events, load_chains` (domyś
 
 Raport jakości wybranych dni (domyślnie 3 ostatnie `complete`, albo `--days ...`): rejestr dni, rozkład niepewności i opóźnień, odjazdy z pierwszego przystanku, pokrycie przystanków, udział powtórzonych pozycji, niezależna kontrola względem prognoz z TripUpdates, łańcuchy (zgodność z `block_id`, udział `cross_route` per linia, reset X i przenoszenie na pętli z tymi samymi filtrami co sekcja 6 `week_analysis`), ekstremalne opóźnienia (|opóźnienie| > 6 h to kursy z innej doby, znany artefakt).
 
+## route-ranking (`krakbus.observed.routes`)
+
+Ranking linii pod batche toru N, domyślnie z pełnych dni roboczych (albo `--days ...`). Liczy zdarzenia `arr_good`. Kolumny: `rank`, `route_id`, `n_events`, `events_per_day`, `cum_share_events` (udział zdarzeń sieci pokryty do tej pozycji), `n_days`, `n_trips`, `n_vehicles`, `med_delay_s`, `p90_delay_s`, `n_transitions`, `cross_route_share`, `carried_share` (z łańcuchów, tylko kursy z zaobserwowanym następnym kursem pojazdu).
+
+## propose-split (`krakbus.observed.split`)
+
+Robocza propozycja podziału dni `complete` na `calib` i `valid`. Warstwy to typ dnia (roboczy, sobota, niedziela) × pokolenie rozkładu (dominujący prefiks `service_id` dnia). W każdej warstwie dni walidacyjne (`days.valid_fraction`) są rozłożone równomiernie w czasie. Wynik `data/processed/days_split_proposal.yaml` ma format `configs/days_split.yaml`; zamrożenie w M3 to skopiowanie go do configs. Dni bez statusu `complete` nie trafiają do `excluded`, bo wyklucza je sam status (dzień `provisional` po kolejnym wgraniu staje się pełny).
+
+## marey.py
+
+`uv run sandbox/gtfs-experiments/marey.py [linia] [YYYY-MM-DD]` (domyślnie 179 i ostatni pełny dzień roboczy). Jeden panel na kierunek; oś pionowa to odległość wzdłuż najczęstszego wariantu trasy (proste między przystankami, bo feed nie ma `shape_dist_traveled`). Rozkład kursów, które pojechały, jest szary, obserwacja (`delay_class` = ok) kolorowa wg pojazdu. Wynik `data/processed/week_report/figures/marey_<linia>_<dzień>.png`.
+
 ## gtfs_versions (`krakbus.ingest.gtfs_versions`)
 
 Łączy wszystkie wersje rozkładu zapisane przez logger.
@@ -131,8 +148,10 @@ Sekcje raportu:
 9. Zakłócenia wspólne u: korelacja residuów opóźnień kolejnych autobusów.
 10. Przyrosty opóźnień na odcinkach, autokorelacja, postoje.
 11. Ranking linii i korytarz wokół linii pilotowej.
+12. Bootstrap klastrowy (B = 200): CI dla dryfu mediany, ilorazu rozrzutu, resetu X i przenoszenia OLS.
+13. Struktura przestrzenna u: korelacja residuów przyrostów między liniami na tym samym odcinku, odcinkach odległych o k i losowych w tym samym oknie 15 min.
 
-Na końcu drukuje listę kluczowych liczb do projektu.
+Filtry: zdarzenia `arr_good`, odjazdy `dep_good` (bez własnych progów outlierów). Na końcu drukuje listę kluczowych liczb do projektu.
 
 - Wejście: `data/processed/events/` przez `load_events`, `data/raw_A/vehicle_positions` (tylko kolumna `fetched_at`, do wykrywania dziur), wszystkie wersje GTFS (sekcja 2 liczy kursy wg kalendarza efektywnego danego dnia).
 - Wyjście: wydruk na ekran, `data/processed/week_report/report.txt`, wykresy w `data/processed/week_report/figures/`.

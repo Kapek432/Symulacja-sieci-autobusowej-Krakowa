@@ -40,7 +40,7 @@ Działająca symulacja zdarzeń dyskretnych (SimPy): debug i testy na **179**, a
 - [ ] Smoke `scope=city` z γ=0 i zerowym/sztywnym szumem: czy w ogóle wstaje (może być wolne — OK, profil pod N)
 - [ ] Ładowanie łańcuchów: block_id → sekwencja tripów dnia (cała sieć), łańcuchy przechodzące między liniami zachowane w całości (flaga `cross_route` z M1 C)
 - [ ] Przy `scope` węższym niż city: kurs wjeżdżający do łańcucha z linii spoza scope dostaje opóźnienie startowe z warunku brzegowego (obserwowane albo z rozkładu empirycznego), a nie zero
-- [ ] **Decyzja: struktura przestrzenna `u`** (niezależne odcinki vs korelacja sąsiednich odcinków / korytarza ulicznego) na podstawie analizy residuów z M1 D; zapisać w configu (`u.spatial: independent|neighbors|corridor`) i uzasadnienie w `docs/`
+- [ ] **Decyzja: struktura przestrzenna `u`** (niezależne odcinki vs korelacja sąsiednich odcinków / korytarza ulicznego) na podstawie analizy residuów z M1 D (16.10, sekcja 13 `week_analysis`: ten sam odcinek 0,29, sąsiedni 0,04, od 3 odcinków dalej tyle co losowe 0,005, co przemawia za `independent` ze wspólnym `u` na odcinku dzielonym przez linie); zapisać w configu (`u.spatial: independent|neighbors|corridor`) i uzasadnienie w `docs/`
 
 ### C. Silnik SimPy
 
