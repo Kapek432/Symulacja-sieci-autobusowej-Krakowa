@@ -29,3 +29,5 @@ days:
   night_end_hour: 4
   special_days_file: configs/special_days.yaml
   split_file: configs/days_split.yaml
+  # docelowy udzial dni walidacyjnych w kazdej warstwie (typ dnia x pokolenie rozkladu) propozycji
+  valid_fraction: 0.34

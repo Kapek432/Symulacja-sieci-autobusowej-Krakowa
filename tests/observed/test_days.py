@@ -27,6 +27,7 @@ CFG = DaysConfig(
     night_end_hour=4,
     special_days_file=Path("/nonexistent"),
     split_file=Path("/nonexistent"),
+    valid_fraction=0.34,
 )
 OK = DayStats(
     service_date="2026-10-07",

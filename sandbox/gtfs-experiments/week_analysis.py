@@ -35,11 +35,13 @@ FIG = OUT / "figures"
 OUT.mkdir(parents=True, exist_ok=True)
 TZ = "Europe/Warsaw"
 PILOT = sys.argv[1] if len(sys.argv) > 1 else "179"
-MAXD = 1800  # |opoznienie| powyzej tego = outlier
 GAP_S = 120  # przerwa w loggerze uznawana za dziure
 MIN_EVENTS_DAY = 500  # dzien z mniejsza liczba zdarzen traktujemy jako smieciowy
 DOW = ["pon", "wt", "sr", "czw", "pt", "sob", "nd"]
 KEY = {}  # kluczowe liczby do podsumowania na koncu
+STATE = {}  # wyniki posrednie przekazywane miedzy sekcjami
+B_BOOT = 200
+SEG_LAGS = [1, 2, 3, 5, 8, 12, 20]
 
 
 class Tee:
@@ -176,13 +178,17 @@ if HAS_BLOCK:
     t_["layover_s"] = gb_["start_s"].shift(-1) - t_["end_s"]
     tr = tr.join(t_.set_index("trip_id")[["next_trip", "blk_idx", "layover_s"]])
 
-_SEL = [d.strip() for d in os.environ["DAYS"].split(",")] if os.environ.get("DAYS") else None
+_SEL = (
+    [d.strip() for d in os.environ["DAYS"].split(",")]
+    if os.environ.get("DAYS")
+    else None
+)
 ev = load_events(_SEL, statuses=None if _SEL else ("complete",), processed_dir=PROC)
 if ev.empty:
     sys.exit("brak zdarzen dla wybranych dni; najpierw uv run build-events")
 for c in ("route_id", "trip_id", "stop_id", "vehicle_id"):
     ev[c] = ev[c].astype(str)
-for c in ("arr_ok", "dep_ok", "is_first", "is_last"):
+for c in ("arr_ok", "dep_ok", "arr_good", "dep_good", "is_first", "is_last"):
     ev[c] = ev[c].fillna(False).astype(bool)
 _no_date = ev["service_date"].isna()
 if _no_date.any():
@@ -233,7 +239,7 @@ print("dni robocze uznane za pelne (>= 70% mediany zdarzen):", WORK)
 KEY["dni_w_danych"] = len(DAYS)
 KEY["pelne_dni_robocze"] = len(WORK)
 
-good = ev[ev["arr_ok"] & ev["delay"].notna() & (ev["delay"].abs() <= MAXD)].copy()
+good = ev[ev["arr_good"]].copy()
 good["span"] = (good["last_seq"] - good["first_seq"]).astype(float)
 good = good[good["span"] > 0].copy()
 good["frac"] = (good["stop_sequence"] - good["first_seq"]) / good["span"]
@@ -242,7 +248,7 @@ gw = good[good["service_date"].isin(WORK)].copy()
 print(
     "zdarzen razem:",
     len(ev),
-    " dobrych do analiz (arr_ok, |op| <= 30 min):",
+    " dobrych do analiz (arr_good):",
     len(good),
     " w dniach roboczych:",
     len(gw),
@@ -755,22 +761,16 @@ def s6():
     )
 
     last = (
-        ev[
-            ev["is_last"]
-            & ev["arr_ok"]
-            & ev["delay"].notna()
-            & (ev["delay"].abs() <= MAXD)
-        ][["service_date", "trip_id", "vehicle_id", "delay", "hour"]]
+        ev[ev["is_last"] & ev["arr_good"]][
+            ["service_date", "trip_id", "vehicle_id", "delay", "hour"]
+        ]
         .drop_duplicates(["service_date", "trip_id"])
         .rename(columns={"delay": "arr_end"})
     )
     first = (
-        ev[
-            ev["is_first"]
-            & ev["dep_ok"]
-            & ev["dep_delay_s"].notna()
-            & (ev["dep_delay_s"].abs() <= MAXD)
-        ][["service_date", "trip_id", "vehicle_id", "dep_delay_s"]]
+        ev[ev["is_first"] & ev["dep_good"]][
+            ["service_date", "trip_id", "vehicle_id", "dep_delay_s"]
+        ]
         .drop_duplicates(["service_date", "trip_id"])
         .rename(columns={"trip_id": "next_trip", "dep_delay_s": "dep_next"})
     )
@@ -781,6 +781,7 @@ def s6():
         first, on=["service_date", "next_trip", "vehicle_id"]
     )
     ch = ch[ch["layover_s"].between(-600, 7200)].copy()
+    STATE["chain_pairs"] = ch
     print(
         "zaobserwowanych par (koniec kursu i odjazd nastepnego z dobra niepewnoscia):",
         len(ch),
@@ -901,12 +902,7 @@ def s6():
         .to_string()
     )
     print("\nOpoznienie odjazdu z pierwszego przystanku wg numeru kursu w bloku:")
-    fdep = ev[
-        ev["is_first"]
-        & ev["dep_ok"]
-        & ev["dep_delay_s"].notna()
-        & (ev["dep_delay_s"].abs() <= MAXD)
-    ].copy()
+    fdep = ev[ev["is_first"] & ev["dep_good"]].copy()
     if "blk_idx" in fdep:
         fdep["kurs_w_bloku"] = pd.cut(fdep["blk_idx"], [-1, 0, 2, 5, 9, 14, 100])
         print(
@@ -1246,8 +1242,7 @@ def s10():
         & (~ev["is_last"])
         & (ev["arr_unc"] <= 15)
         & (ev["dep_unc"] <= 15)
-        & ev["delay"].notna()
-        & (ev["delay"].abs() <= MAXD)
+        & (ev["delay_class"].fillna("") == "ok")
         & ev["service_date"].isin(WORK)
     ].copy()
     dw["dwell"] = dw["dep_ts"] - dw["arr_ts"]
@@ -1337,8 +1332,200 @@ def s11():
     )
 
 
+def boot_clusters(codes, fn, B=B_BOOT, seed=0):
+    """Bootstrap klastrowy: fn(idx) liczone na wierszach z klastrow losowanych ze zwracaniem."""
+    order = np.argsort(codes, kind="stable")
+    sc = codes[order]
+    starts = np.r_[0, np.flatnonzero(np.diff(sc)) + 1]
+    ends = np.r_[starts[1:], len(sc)]
+    rng = np.random.default_rng(seed)
+    out = np.empty(B)
+    for b in range(B):
+        pick = rng.integers(0, len(starts), len(starts))
+        lens = ends[pick] - starts[pick]
+        offs = np.arange(lens.sum()) - np.repeat(np.cumsum(lens) - lens, lens)
+        out[b] = fn(order[np.repeat(starts[pick], lens) + offs])
+    return out
+
+
+@section(
+    "12. NIEPEWNOSC KLUCZOWYCH STATYSTYK: bootstrap klastrowy (kursy dla dryfu, pojazd x doba dla petli)"
+)
+def s12():
+    rows = []
+
+    def add(name, est, draws, n_cl, unit):
+        lo, hi = np.nanquantile(draws, [0.025, 0.975])
+        rows.append(
+            {
+                "statystyka": name,
+                "estymata": est,
+                "CI95_od": lo,
+                "CI95_do": hi,
+                "klastrow": n_cl,
+                "jednostka": unit,
+            }
+        )
+        KEY[f"CI95_{name}"] = (round(float(lo), 3), round(float(hi), 3))
+
+    fifth = gw["fifth"].to_numpy()
+    delay = gw["delay"].to_numpy(float)
+    codes = gw.groupby(["service_date", "trip_id"]).ngroup().to_numpy()
+
+    def drift(idx):
+        f, d = fifth[idx], delay[idx]
+        return np.median(d[f == 4]) - np.median(d[f == 0])
+
+    def spread(idx):
+        f, d = fifth[idx], delay[idx]
+        return d[f == 4].std() / d[f == 0].std()
+
+    all_idx = np.arange(len(gw))
+    n_tr = int(codes.max()) + 1
+    add("dryf_mediany_s", drift(all_idx), boot_clusters(codes, drift), n_tr, "s")
+    add(
+        "std_ostatnia/pierwsza",
+        spread(all_idx),
+        boot_clusters(codes, spread, seed=1),
+        n_tr,
+        "-",
+    )
+
+    ch = STATE.get("chain_pairs")
+    if ch is not None and len(ch) >= 100:
+        a = ch["arr_end"].to_numpy(float)
+        b = ch["dep_next"].to_numpy(float)
+        cc = ch.groupby(["service_date", "vehicle_id"]).ngroup().to_numpy()
+
+        def reset_x(idx):
+            return 1 - np.median(b[idx]) / np.median(a[idx])
+
+        def ols(idx):
+            return np.polyfit(a[idx], b[idx], 1)[0]
+
+        n_ch = int(cc.max()) + 1
+        add(
+            "reset_X",
+            reset_x(np.arange(len(a))),
+            boot_clusters(cc, reset_x, seed=2),
+            n_ch,
+            "-",
+        )
+        add(
+            "przenoszenie_OLS",
+            ols(np.arange(len(a))),
+            boot_clusters(cc, ols, seed=3),
+            n_ch,
+            "-",
+        )
+    print(f"B = {B_BOOT} losowan; przedzial percentylowy 2.5-97.5%")
+    print(pd.DataFrame(rows).round(3).to_string(index=False))
+    print(
+        "Klaster = kurs w dobie (zdarzenia jednego kursu nie sa niezalezne) albo pojazd w dobie"
+        " (kolejne pary jednego pojazdu dziela opoznienie). Zmiennosc miedzy dniami: sekcja 3 (KS)."
+    )
+
+
+@section(
+    "13. STRUKTURA PRZESTRZENNA u: korelacja residuow przyrostow na odcinkach sasiednich vs odleglych"
+)
+def s13():
+    e2 = gw.sort_values(
+        ["service_date", "vehicle_id", "trip_id", "stop_sequence"]
+    ).copy()
+    g = e2.groupby(["service_date", "vehicle_id", "trip_id"])
+    e2["dd"] = g["delay"].diff()
+    e2["dseq"] = g["stop_sequence"].diff()
+    e2["a"] = g["stop_id"].shift(1)
+    inc = e2[e2["dseq"] == 1].dropna(subset=["dd", "a"]).copy()
+    inc["seg"] = inc["a"] + ">" + inc["stop_id"]
+    inc["res"] = inc["dd"] - inc.groupby(["seg", "period"])["dd"].transform("median")
+    inc["win"] = (inc["arr_ts"] // 900).astype("int64")
+    cell = (
+        inc.groupby(["service_date", "win", "seg", "route_id"])["res"]
+        .mean()
+        .reset_index()
+    )
+    print(
+        "residuum = przyrost opoznienia na odcinku minus mediana (odcinek, pora); komorka = srednia"
+        " residuow linii na odcinku w oknie 15 min. Pary tylko miedzy roznymi liniami, wiec szum"
+        " pomiaru jednego autobusu nie wchodzi do korelacji."
+    )
+    print("komorek:", len(cell), " odcinkow:", cell["seg"].nunique())
+
+    s = st[st["trip_id"].isin(set(inc["trip_id"]))][["trip_id", "stop_id"]].copy()
+    gs = s.groupby("trip_id")
+    s["seg"] = gs["stop_id"].shift(1) + ">" + s["stop_id"]
+    s = s.dropna(subset=["seg"])
+    gs = s.groupby("trip_id")
+    lag_pairs = []
+    for k in SEG_LAGS:
+        p = pd.DataFrame({"seg_a": s["seg"], "seg_b": gs["seg"].shift(-k), "lag": k})
+        lag_pairs.append(p.dropna().drop_duplicates(["seg_a", "seg_b"]))
+    lp = pd.concat(lag_pairs).sort_values("lag").drop_duplicates(["seg_a", "seg_b"])
+
+    def corr_row(name, x, y):
+        return {
+            "odstep_odcinkow": name,
+            "n_par": len(x),
+            "pearson": x.corr(y),
+            "spearman": x.rank().corr(y.rank()),
+        }
+
+    rows = []
+    k0 = cell.merge(cell, on=["service_date", "win", "seg"], suffixes=("_a", "_b"))
+    k0 = k0[k0["route_id_a"] < k0["route_id_b"]]
+    rows.append(corr_row("0 (ten sam odcinek)", k0["res_a"], k0["res_b"]))
+    ca = cell.rename(columns={"seg": "seg_a", "route_id": "route_a", "res": "res_a"})
+    cb = cell.rename(columns={"seg": "seg_b", "route_id": "route_b", "res": "res_b"})
+    for k in SEG_LAGS:
+        pk = ca.merge(lp[lp["lag"] == k][["seg_a", "seg_b"]], on="seg_a").merge(
+            cb, on=["service_date", "win", "seg_b"]
+        )
+        pk = pk[pk["route_a"] != pk["route_b"]]
+        rows.append(corr_row(str(k), pk["res_a"], pk["res_b"]))
+    rng = np.random.default_rng(4)
+    sh = cell.assign(_r=rng.random(len(cell))).sort_values(
+        ["service_date", "win", "_r"]
+    )
+    perm = sh.groupby(["service_date", "win"]).sample(frac=1.0, random_state=5)
+    sh = sh.reset_index(drop=True)
+    perm = perm.reset_index(drop=True)
+    ok = (sh["seg"] != perm["seg"]) & (sh["route_id"] != perm["route_id"])
+    ok &= sh["service_date"].eq(perm["service_date"]) & sh["win"].eq(perm["win"])
+    rows.append(
+        corr_row("losowe (to samo okno)", sh.loc[ok, "res"], perm.loc[ok, "res"])
+    )
+    out = pd.DataFrame(rows)
+    print(out.round(4).to_string(index=False))
+    print(
+        "odstep k = drugi odcinek lezy k odcinkow dalej na trasie jakiegos kursu. Zanik z k mowi,"
+        " jak daleko siega wspolne zaklocenie (struktura przestrzenna u w M2 B); poziom 'losowe'"
+        " to wspolny skladnik calego miasta w oknie."
+    )
+    KEY["korelacja_u_odcinek_k0_k1_losowe"] = tuple(
+        round(float(out.loc[i, "pearson"]), 3) for i in (0, 1, len(out) - 1)
+    )
+
+    def f(ax):
+        sub = out.iloc[1:-1]
+        ax.plot(
+            [int(x) for x in sub["odstep_odcinkow"]],
+            sub["pearson"],
+            marker="o",
+            label="k odcinkow",
+        )
+        ax.axhline(out["pearson"].iloc[0], ls="--", color="k", label="ten sam odcinek")
+        ax.axhline(out["pearson"].iloc[-1], ls=":", color="gray", label="losowe")
+        ax.set_xlabel("odstep w odcinkach")
+        ax.set_title("korelacja residuow przyrostow miedzy liniami")
+        ax.legend()
+
+    plot("13_korelacja_odcinkow.png", f)
+
+
 # =====================================================================================
-for fn in (s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11):
+for fn in (s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13):
     fn()
 
 print("\n" + "=" * 110 + "\nKLUCZOWE LICZBY DO PROJEKTU\n" + "=" * 110)

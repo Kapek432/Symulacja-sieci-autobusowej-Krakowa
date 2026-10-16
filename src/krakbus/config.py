@@ -38,6 +38,7 @@ class DaysConfig:
     night_end_hour: int
     special_days_file: Path
     split_file: Path
+    valid_fraction: float
 
 
 @dataclass(frozen=True)
@@ -86,5 +87,6 @@ def load_config(path: Path = DEFAULT_CONFIG, root: Path = ROOT) -> Config:
             night_end_hour=int(dy["night_end_hour"]),
             special_days_file=_path(dy["special_days_file"], root),
             split_file=_path(dy["split_file"], root),
+            valid_fraction=float(dy["valid_fraction"]),
         ),
     )
