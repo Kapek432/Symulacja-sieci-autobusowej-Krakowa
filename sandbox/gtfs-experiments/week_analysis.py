@@ -1,9 +1,10 @@
-"""week_analysis.py: pelna analiza zebranych danych (wejscie: data/processed/observed_events.parquet z build_events.py).
+"""week_analysis.py: pelna analiza zebranych danych (wejscie: data/processed/events/ z `uv run build-events`).
 
 Uzycie:
-  uv run build_events.py            # najpierw przebuduj zdarzenia na calym tygodniu
+  uv run build-events               # najpierw doliczenie nowych dni
   uv run week_analysis.py [linia_pilotowa]          np. uv run week_analysis.py 179
-Opcjonalnie: DAYS=2026-10-05,2026-10-06 uv run week_analysis.py   (reczny wybor dni roboczych do analiz)
+Domyslnie wszystkie dni `complete` z data/processed/days.csv.
+Opcjonalnie: DAYS=2026-10-05,2026-10-06 uv run week_analysis.py   (reczny wybor dni, dowolny status)
 
 Wyniki: wydruk na ekran + data/processed/week_report/report.txt + wykresy w .../figures/
 """
@@ -16,7 +17,9 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from gtfs_versions import load_schedule
+
+from krakbus.ingest.gtfs_versions import load_schedule
+from krakbus.observed.store import load_events
 
 warnings.filterwarnings("ignore")
 pd.set_option("display.width", 250)
@@ -173,7 +176,10 @@ if HAS_BLOCK:
     t_["layover_s"] = gb_["start_s"].shift(-1) - t_["end_s"]
     tr = tr.join(t_.set_index("trip_id")[["next_trip", "blk_idx", "layover_s"]])
 
-ev = pd.read_parquet(PROC / "observed_events.parquet")
+_SEL = [d.strip() for d in os.environ["DAYS"].split(",")] if os.environ.get("DAYS") else None
+ev = load_events(_SEL, statuses=None if _SEL else ("complete",), processed_dir=PROC)
+if ev.empty:
+    sys.exit("brak zdarzen dla wybranych dni; najpierw uv run build-events")
 for c in ("route_id", "trip_id", "stop_id", "vehicle_id"):
     ev[c] = ev[c].astype(str)
 for c in ("arr_ok", "dep_ok", "is_first", "is_last"):
@@ -215,8 +221,8 @@ cnt_day = ev.groupby("service_date").size()
 _wd = [d for d in DAYS if pd.Timestamp(d).dayofweek < 5]
 _med = cnt_day[_wd].median() if _wd else 0
 FULL = [d for d in _wd if cnt_day[d] >= 0.7 * _med]
-if os.environ.get("DAYS"):
-    WORK = [d.strip() for d in os.environ["DAYS"].split(",")]
+if _SEL:
+    WORK = _SEL
 else:
     WORK = FULL
 print(

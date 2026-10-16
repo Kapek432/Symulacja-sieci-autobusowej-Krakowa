@@ -10,7 +10,19 @@ dependencies = [
     "numpy>=2.5.4",
     "pandas>=3.0.6",
     "pyarrow>=26.0.0",
+    "pyyaml>=6.0.3",
 ]
+
+[project.scripts]
+build-events = "krakbus.observed.pipeline:main"
+events-quality = "krakbus.observed.quality:main"
+
+[build-system]
+requires = ["uv_build>=0.9.17,<0.10"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "krakbus"
 
 [dependency-groups]
 dev = [
@@ -19,5 +31,4 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
-pythonpath = ["sandbox/gtfs-experiments"]
 testpaths = ["tests"]

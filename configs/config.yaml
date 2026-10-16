@@ -1,0 +1,22 @@
+data:
+  raw_dir: data/raw_A
+  processed_dir: data/processed
+  timezone: Europe/Warsaw
+
+events:
+  # przerwa dluzsza niz to miedzy raportami statusu 1 = nowy epizod postoju
+  episode_gap_s: 600
+  # maksymalna niepewnosc czasu przyjazdu/odjazdu uznawana za dobra
+  unc_ok_s: 30
+
+days:
+  # odstep miedzy migawkami loggera uznawany za dziure
+  logger_gap_s: 120
+  # godziny lokalne [od, do), w ktorych dziury dyskwalifikuja dzien
+  service_hours: [5, 23]
+  max_gap_min: 30
+  min_events: 500
+  # dzien D jest pelny dopiero, gdy sa dane do tej godziny lokalnej doby D+1 (kursy nocne)
+  night_end_hour: 4
+  special_days_file: configs/special_days.yaml
+  split_file: configs/days_split.yaml

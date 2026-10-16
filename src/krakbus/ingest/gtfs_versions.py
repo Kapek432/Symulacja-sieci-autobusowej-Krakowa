@@ -1,4 +1,4 @@
-"""gtfs_versions.py: laczenie wersji rozkladu GTFS zapisanych przez logger i przypisanie daty obslugi.
+"""Laczenie wersji rozkladu GTFS zapisanych przez logger i przypisanie daty obslugi.
 
 ZTP publikuje feed kroczacy: kazda wersja zawiera kilka "pokolen" uslug (prefiks daty w `service_id`
 i `trip_id`, np. `20261005_1_...`), a kalendarz jest tylko w `calendar_dates.txt`. Ten sam `trip_id`
@@ -131,6 +131,47 @@ def effective_calendar(per_version: dict[str, pd.DataFrame]) -> pd.DataFrame:
     )
 
 
+def _version_zips(static_dir: Path) -> list[Path]:
+    zips = sorted(static_dir.glob("GTFS_KRK_A_*.zip"), key=version_stamp)
+    if not zips:
+        raise FileNotFoundError(f"brak plikow GTFS_KRK_A_*.zip w {static_dir}")
+    return zips
+
+
+def _read_version_calendar(z: zipfile.ZipFile) -> pd.DataFrame:
+    names = set(z.namelist())
+    cal = (
+        pd.read_csv(z.open("calendar.txt"), dtype=str)
+        if "calendar.txt" in names
+        else None
+    )
+    cd = (
+        pd.read_csv(z.open("calendar_dates.txt"), dtype=str)
+        if "calendar_dates.txt" in names
+        else None
+    )
+    return active_services(cal, cd)
+
+
+def load_version_calendars(static_dir: Path) -> dict[str, pd.DataFrame]:
+    """Wczytuje same kalendarze wszystkich wersji (bez `stop_times`), szybko.
+
+    Args:
+        static_dir: katalog z plikami ZIP zapisanymi przez logger.
+
+    Returns:
+        Znacznik wersji -> aktywne pary (`service_id`, `date`) tej wersji, od najstarszej.
+
+    Raises:
+        FileNotFoundError: gdy w katalogu nie ma zadnej wersji GTFS.
+    """
+    out: dict[str, pd.DataFrame] = {}
+    for zpath in _version_zips(static_dir):
+        with zipfile.ZipFile(zpath) as z:
+            out[version_stamp(zpath)] = _read_version_calendar(z)
+    return out
+
+
 def load_schedule(
     static_dir: Path, stop_time_cols: list[str] | None = None
 ) -> Schedule:
@@ -146,16 +187,13 @@ def load_schedule(
     Raises:
         FileNotFoundError: gdy w katalogu nie ma zadnej wersji GTFS.
     """
-    zips = sorted(static_dir.glob("GTFS_KRK_A_*.zip"), key=version_stamp)
-    if not zips:
-        raise FileNotFoundError(f"brak plikow GTFS_KRK_A_*.zip w {static_dir}")
+    zips = _version_zips(static_dir)
     cols = stop_time_cols or STOP_TIME_COLS
     trips, stop_times, stops, cals = [], [], [], {}
     seen: set[str] = set()
     for zpath in reversed(zips):
         stamp = version_stamp(zpath)
         with zipfile.ZipFile(zpath) as z:
-            names = set(z.namelist())
             tr = pd.read_csv(z.open("trips.txt"), dtype=str)
             tr = tr[~tr["trip_id"].isin(seen)]
             new_ids = set(tr["trip_id"])
@@ -167,17 +205,7 @@ def load_schedule(
             stops.append(
                 pd.read_csv(z.open("stops.txt"), dtype=str).assign(gtfs_stamp=stamp)
             )
-            cal = (
-                pd.read_csv(z.open("calendar.txt"), dtype=str)
-                if "calendar.txt" in names
-                else None
-            )
-            cd = (
-                pd.read_csv(z.open("calendar_dates.txt"), dtype=str)
-                if "calendar_dates.txt" in names
-                else None
-            )
-            cals[stamp] = active_services(cal, cd)
+            cals[stamp] = _read_version_calendar(z)
     return Schedule(
         trips=pd.concat(trips, ignore_index=True),
         stop_times=pd.concat(stop_times, ignore_index=True),

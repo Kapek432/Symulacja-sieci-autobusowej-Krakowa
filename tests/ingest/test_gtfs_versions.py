@@ -1,6 +1,7 @@
 import pandas as pd
 import pytest
-from gtfs_versions import (
+
+from krakbus.ingest.gtfs_versions import (
     active_services,
     assign_service_date,
     effective_calendar,
