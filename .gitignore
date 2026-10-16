@@ -39,3 +39,6 @@ unity/[Ll]ogs/
 unity/[Uu]ser[Ss]ettings/
 unity/*.csproj
 unity/*.sln
+unity/*.slnx
+unity/Assets/StreamingAssets/data/
+unity/Assets/StreamingAssets/data.meta
