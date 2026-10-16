@@ -21,6 +21,7 @@ route-ranking = "krakbus.observed.routes:main"
 propose-split = "krakbus.observed.split:main"
 simulate = "krakbus.sim.run:main"
 marey = "krakbus.viz.marey:main"
+export-unity = "krakbus.viz.export_unity:main"
 
 [build-system]
 requires = ["uv_build>=0.9.17,<0.10"]
