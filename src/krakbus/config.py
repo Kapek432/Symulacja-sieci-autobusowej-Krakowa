@@ -20,6 +20,8 @@ class DataConfig:
 class EventsConfig:
     episode_gap_s: int
     unc_ok_s: int
+    outlier_s: int
+    wrong_day_min_s: int
 
 
 @dataclass(frozen=True)
@@ -70,7 +72,10 @@ def load_config(path: Path = DEFAULT_CONFIG, root: Path = ROOT) -> Config:
             timezone=d["timezone"],
         ),
         events=EventsConfig(
-            episode_gap_s=int(e["episode_gap_s"]), unc_ok_s=int(e["unc_ok_s"])
+            episode_gap_s=int(e["episode_gap_s"]),
+            unc_ok_s=int(e["unc_ok_s"]),
+            outlier_s=int(e["outlier_s"]),
+            wrong_day_min_s=int(e["wrong_day_min_s"]),
         ),
         chains=ChainsConfig(l_min_s=int(raw["chains"]["l_min_s"])),
         days=DaysConfig(

@@ -33,7 +33,7 @@ from krakbus.observed.manifest import (
 from krakbus.observed.store import KINDS, day_path
 
 # podbic przy kazdej zmianie logiki, ktora zmienia zawartosc plikow events/ albo chains/
-PIPELINE_VERSION = "2"
+PIPELINE_VERSION = "4"
 
 logger = logging.getLogger("build_events")
 

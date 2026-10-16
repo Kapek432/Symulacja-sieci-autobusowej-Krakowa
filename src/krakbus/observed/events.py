@@ -6,6 +6,7 @@ import pandas as pd
 
 from krakbus.config import EventsConfig
 from krakbus.ingest.gtfs_versions import Schedule, assign_service_date
+from krakbus.observed.wrong_day import classify_delays, remap_wrong_day
 
 STOPPED_AT = 1
 
@@ -169,7 +170,9 @@ def build_events(
         Jeden wiersz na postoj pojazdu na przystanku, z data obslugi i opoznieniami.
     """
     ev = stop_episodes(clean_positions(vp), cfg.episode_gap_s)
-    return attach_schedule(ev, idx, cfg, tz)
+    ev = attach_schedule(ev, idx, cfg, tz)
+    ev = remap_wrong_day(ev, idx, cfg, tz)
+    return classify_delays(ev, cfg)
 
 
 def build_day(
