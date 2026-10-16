@@ -23,11 +23,12 @@ from krakbus.observed.manifest import (
 from krakbus.observed.store import day_path
 from krakbus.sim.boundary import boundary_starts, observed_end_delays
 from krakbus.sim.engine import run_simpy
+from krakbus.sim.fast import run_fast
 from krakbus.sim.network import Network, build_network, select_trips
 from krakbus.sim.noise import draw_noise
 from krakbus.sim.params import DEFAULT_SIM_CONFIG, SimConfig, load_sim_config
 
-ENGINES = {"simpy": run_simpy}
+ENGINES = {"simpy": run_simpy, "fast": run_fast}
 SIM_COLUMNS = [
     "service_date",
     "vehicle_id",
@@ -121,7 +122,9 @@ def simulate(
     noise = draw_noise(net, sim_cfg.model, seed)
     obs = end_delays if sim_cfg.boundary == "observed" else None
     starts = boundary_starts(net, sel, noise, sim_cfg.model, obs)
+    t1 = time.perf_counter()
     delay = ENGINES[engine](net, sel, noise, sim_cfg.model, starts)
+    engine_s = time.perf_counter() - t1
     run_id = f"{net.service_date}_{label}_{engine}_s{seed}"
     ev = to_events(net, sel, delay, run_id, seed)
     meta = {
@@ -135,6 +138,7 @@ def simulate(
         "n_boundary": len(starts),
         "n_events": len(ev),
         "elapsed_s": round(time.perf_counter() - t0, 3),
+        "engine_s": round(engine_s, 4),
         "model": asdict(sim_cfg.model),
     }
     return ev, meta
@@ -190,11 +194,13 @@ def main() -> None:
     atomic_write_parquet(ev, out / "events.parquet")
     atomic_write_bytes(out / "run.json", json.dumps(meta, indent=1, ensure_ascii=False).encode())
     logger.info(
-        "%s: kursow %d (brzegowych %d), zdarzen %d, %.1f s; mediana opoznienia %.0f s",
+        "%s: kursow %d (brzegowych %d), zdarzen %d, silnik %.3f s, przebieg %.1f s; "
+        "mediana opoznienia %.0f s",
         meta["run_id"],
         meta["n_trips"],
         meta["n_boundary"],
         meta["n_events"],
+        meta["engine_s"],
         meta["elapsed_s"],
         float(np.median(ev["arr_delay_s"])),
     )

@@ -30,6 +30,15 @@ def test_simulate_writes_observed_like_schema(small_net) -> None:
     assert meta["run_id"] == "2026-10-14_A_simpy_s1"
 
 
+def test_fast_engine_gives_same_events_as_simpy(small_net) -> None:
+    cfg = replace(load_sim_config(), boundary="delta")
+    a, ma = simulate(small_net, cfg, None, "city", seed=4, engine="simpy", end_delays=None)
+    b, mb = simulate(small_net, cfg, None, "city", seed=4, engine="fast", end_delays=None)
+    np.testing.assert_allclose(b["arr_delay_s"], a["arr_delay_s"], atol=1e-6)
+    assert mb["run_id"] == "2026-10-14_city_fast_s4"
+    assert mb["engine_s"] >= 0 and ma["engine_s"] >= 0
+
+
 def test_simulate_rejects_empty_scope(small_net) -> None:
     with pytest.raises(ValueError, match="brak kursow"):
         simulate(small_net, load_sim_config(), ["999"], "999", 0, "simpy", None)
