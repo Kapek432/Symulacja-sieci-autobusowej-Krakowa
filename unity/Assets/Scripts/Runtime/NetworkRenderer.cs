@@ -18,8 +18,32 @@ namespace BusReplay
             var root = new GameObject("Network");
             AddMeshObject(root, "Ground", BuildGround(net.Bbox), ground);
             AddMeshObject(root, "Routes", BuildRoutes(net.Segments), route);
+            AddMeshObject(root, "RouteLines", BuildRouteLines(net.Segments), route);
             AddMeshObject(root, "Stops", BuildStops(net.Stops), stop);
             return root;
+        }
+
+        /// <summary>Cienkie linie 1 px, widoczne z duzej wysokosci.</summary>
+        static Mesh BuildRouteLines(NetworkSegment[] segments)
+        {
+            var verts = new List<Vector3>();
+            var idx = new List<int>();
+            foreach (var seg in segments)
+            {
+                var p = seg.Points;
+                for (int i = 0; i + 1 < p.Length; i++)
+                {
+                    int b = verts.Count;
+                    verts.Add(new Vector3(p[i].x, 0.06f, p[i].y));
+                    verts.Add(new Vector3(p[i + 1].x, 0.06f, p[i + 1].y));
+                    idx.Add(b); idx.Add(b + 1);
+                }
+            }
+            var mesh = new Mesh { name = "RouteLines", indexFormat = IndexFormat.UInt32 };
+            mesh.SetVertices(verts);
+            mesh.SetIndices(idx, MeshTopology.Lines, 0);
+            mesh.RecalculateBounds();
+            return mesh;
         }
 
         static void AddMeshObject(GameObject parent, string name, Mesh mesh, Material mat)

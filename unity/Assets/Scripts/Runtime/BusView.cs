@@ -17,6 +17,7 @@ namespace BusReplay
         MaterialPropertyBlock block;
         Color color = Color.white;
         bool highlighted;
+        float zoomScale = 1f;
 
         void EnsureInit()
         {
@@ -40,8 +41,21 @@ namespace BusReplay
         {
             EnsureInit();
             highlighted = on;
-            transform.localScale = on ? DefaultScale * 1.3f : DefaultScale;
+            UpdateScale();
             PushColor();
+        }
+
+        /// <summary>Skala zalezna od wysokosci kamery (>= 1).</summary>
+        public void SetZoomScale(float s)
+        {
+            if (Mathf.Approximately(s, zoomScale)) return;
+            zoomScale = s;
+            UpdateScale();
+        }
+
+        void UpdateScale()
+        {
+            transform.localScale = DefaultScale * zoomScale * (highlighted ? 1.3f : 1f);
         }
 
         void PushColor()

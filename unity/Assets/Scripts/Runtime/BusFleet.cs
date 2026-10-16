@@ -7,6 +7,8 @@ namespace BusReplay
     /// <summary>Tworzy widoki wszystkich pojazdow i odswieza je co klatke.</summary>
     public class BusFleet : MonoBehaviour
     {
+        public const float ScaleRefHeight = 1500f;
+
         readonly Dictionary<string, BusView> views = new Dictionary<string, BusView>();
         readonly List<(VehicleTrack track, BusView view)> items = new List<(VehicleTrack, BusView)>();
 
@@ -33,8 +35,11 @@ namespace BusReplay
         public void Tick(double T)
         {
             int n = 0;
+            var cam = Camera.main;
+            float zs = cam != null ? Mathf.Max(1f, cam.transform.position.y / ScaleRefHeight) : 1f;
             foreach (var (track, view) in items)
             {
+                view.SetZoomScale(zs);
                 var s = track.Sample(T);
                 view.Apply(s);
                 if (s.Visible) n++;

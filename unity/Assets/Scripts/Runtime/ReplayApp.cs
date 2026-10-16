@@ -54,12 +54,18 @@ namespace BusReplay
                 Fleet.Tick(Clock.T);
                 sw.Stop();
                 Debug.Log($"BusReplay: wczytano {Positions.Tracks.Count} pojazdow w {sw.ElapsedMilliseconds} ms");
-                Loaded?.Invoke();
             }
             catch (ReplayDataException ex)
             {
                 Fail(ex.Message);
+                return;
             }
+            catch (Exception ex)
+            {
+                Fail("Blad wczytywania danych: " + ex.Message);
+                return;
+            }
+            Loaded?.Invoke();
         }
 
         static void RequireFile(string path, string name)
