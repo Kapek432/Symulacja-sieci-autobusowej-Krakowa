@@ -3,6 +3,7 @@
     "rootNamespace": "BusReplay.Tests",
     "references": [
         "BusReplay.Core",
+        "BusReplay",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

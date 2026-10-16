@@ -65,6 +65,9 @@ namespace BusReplay
                 Fail("Blad wczytywania danych: " + ex.Message);
                 return;
             }
+            new GameObject("Hud").AddComponent<HudView>().Init(this);
+            new GameObject("SelectionPanel").AddComponent<SelectionPanel>().Init(this);
+            new GameObject("StopLabels").AddComponent<StopLabels>().Init(this);
             Loaded?.Invoke();
         }
 
