@@ -4,6 +4,7 @@ Propagacja opóźnień w sieci autobusowej Krakowa: symulacja zdarzeń dyskretny
 
 - Temat (dla prowadzącego): [`TEMAT.md`](TEMAT.md)
 - Plan realizacji i kamienie milowe: [`docs/PLAN_REALIZACJI.md`](docs/PLAN_REALIZACJI.md)
+- Dziennik prac (co zrobione, decyzje; wpis po każdej implementacji): [`docs/DZIENNIK.md`](docs/DZIENNIK.md)
 - Opis skryptów danych: [`sandbox/gtfs-experiments/README_skrypty.md`](sandbox/gtfs-experiments/README_skrypty.md)
 
 ## Szybki start

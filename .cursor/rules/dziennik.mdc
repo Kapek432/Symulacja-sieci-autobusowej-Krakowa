@@ -1,0 +1,21 @@
+---
+description: Po kazdej zakonczonej implementacji dopisz wpis do docs/DZIENNIK.md
+alwaysApply: true
+---
+
+# Dziennik prac
+
+Po zakończeniu implementacji (kod, zmiana pipeline'u albo danych, decyzja metodologiczna) — przed commitem albo razem z nim — dopisz wpis na **górze** listy w `docs/DZIENNIK.md`, według szablonu z tego pliku:
+
+- data (`YYYY-MM-DD`), krótki tytuł i kamień milowy (np. `M1 C`)
+- **Kto:** autor z `git config user.name` (osoba, nie agent)
+- **Commity:** skróty hashy (po commicie uzupełnij albo dopisz w kolejnym)
+- Zrobione / Decyzje (z uzasadnieniem i odrzuconą alternatywą) / Sprawdzone (testy, porównania, liczby z dniami danych albo hashem manifestu) / Otwarte
+
+Zasady:
+
+- Nie przepisuj ani nie usuwaj cudzych wpisów; poprawki dopisuj jako nowy wpis.
+- Decyzja zmieniająca plan trafia też do `docs/PLAN_REALIZACJI.md` lub `docs/milestones/`; w dzienniku krótka notka.
+- Zaznacz zrobione punkty w odpowiednim `docs/milestones/*.md`.
+- Pomijaj drobiazgi (literówki, formatowanie).
+- Pisz po polsku, rzeczowo, bez emoji.
