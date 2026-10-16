@@ -1,11 +1,9 @@
 """build_events.py: zdarzenia przystankowe z VehiclePositions (status 1) + kontrola jakosci."""
 
-import glob
-import zipfile
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
+from gtfs_versions import assign_service_date, load_schedule
 
 HERE = Path(__file__).resolve()
 ROOT = next((p for p in HERE.parents if (p / "data" / "raw_A").is_dir()), HERE.parent)
@@ -36,20 +34,10 @@ vp = (
     .copy()
 )
 
-zpath = sorted(glob.glob(str(DATA / "static" / "GTFS_KRK_A_*.zip")))[-1]
-with zipfile.ZipFile(zpath) as z:
-    st = pd.read_csv(
-        z.open("stop_times.txt"),
-        dtype=str,
-        usecols=[
-            "trip_id",
-            "stop_sequence",
-            "stop_id",
-            "arrival_time",
-            "departure_time",
-        ],
-    )
-    trips = pd.read_csv(z.open("trips.txt"), dtype=str)
+sched = load_schedule(DATA / "static")
+st = sched.stop_times
+trips = sched.trips
+print("wersje rozkladu (laczone po trip_id):", ", ".join(sched.versions))
 st["stop_sequence"] = st["stop_sequence"].astype(int)
 st["arr_s"] = hms(st["arrival_time"])
 st["dep_s"] = hms(st["departure_time"])
@@ -104,23 +92,16 @@ ev = ev.merge(
     on=["trip_id", "stop_sequence"],
     how="left",
 )
-ev = ev.merge(trips[["trip_id", "route_id"]], on="trip_id", how="left")
+ev = ev.merge(
+    trips[["trip_id", "route_id", "service_id", "gtfs_stamp"]], on="trip_id", how="left"
+)
 ev = ev.join(bounds, on="trip_id")
 ev["is_first"] = ev["stop_sequence"] == ev["first_seq"]
 ev["is_last"] = ev["stop_sequence"] == ev["last_seq"]
 
-local = pd.to_datetime(ev["arr_ts"], unit="s", utc=True).dt.tz_convert(TZ)
-d0 = local.dt.normalize()
-d1 = (local - pd.Timedelta(days=1)).dt.normalize()
-epoch = pd.Timestamp("1970-01-01", tz="UTC")
-mid0 = (d0 - epoch).dt.total_seconds()
-mid1 = (d1 - epoch).dt.total_seconds()
-# data obslugi: dzisiejsza albo wczorajsza, zaleznie od tego, ktora daje czas blizszy rozkladowi
-use0 = (ev["arr_ts"] - (mid0 + ev["arr_s"])).abs() <= (
-    ev["arr_ts"] - (mid1 + ev["arr_s"])
-).abs()
-mid = mid0.where(use0, mid1)
-ev["service_date"] = d0.where(use0, d1).dt.strftime("%Y-%m-%d")
+ev["service_date"], mid = assign_service_date(
+    ev["arr_ts"], ev["arr_s"], ev["service_id"], sched.calendar, TZ
+)
 ev["arr_delay_s"] = ev["arr_ts"] - (mid + ev["arr_s"])
 ev["dep_delay_s"] = ev["dep_ts"] - (
     mid + ev["dep_s"]
@@ -148,6 +129,38 @@ print(
     round(ev["arr_unc"].isna().mean(), 3),
 )
 print("dopasowane do rozkladu:", round(ev["arr_s"].notna().mean(), 3))
+print(
+    "z data obslugi (usluga aktywna w kalendarzu):",
+    round(ev["service_date"].notna().mean(), 3),
+)
+
+# kontrola: liczba zdarzen na date obslugi vs lokalna data przyjazdu (rozjazd = zle przypisanie dnia)
+_loc_date = (
+    pd.to_datetime(ev["arr_ts"], unit="s", utc=True)
+    .dt.tz_convert(TZ)
+    .dt.strftime("%Y-%m-%d")
+)
+per_day = (
+    pd.DataFrame(
+        {
+            "wg_daty_obslugi": ev.groupby("service_date").size(),
+            "wg_daty_lokalnej": ev.groupby(_loc_date).size(),
+            "bez_daty_obslugi": ev[ev["service_date"].isna()].groupby(_loc_date).size(),
+            "linii": ev.groupby("service_date")["route_id"].nunique(),
+        }
+    )
+    .fillna(0)
+    .astype(int)
+)
+per_day["wersja_kalendarza"] = (
+    sched.calendar.assign(
+        d=pd.to_datetime(sched.calendar["date"]).dt.strftime("%Y-%m-%d")
+    )
+    .groupby("d")["gtfs_stamp"]
+    .first()
+)
+print("\nzdarzenia dzien po dniu:")
+print(per_day.to_string())
 
 good = ev[ev["arr_ok"] & ev["arr_delay_s"].notna()]
 print(

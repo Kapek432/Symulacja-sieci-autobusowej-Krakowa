@@ -2,3 +2,8 @@ local/
 data/geoportal/LoD*/*
 data/processed/*
 data/raw_A/*
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.venv/
+.DS_Store

@@ -10,6 +10,7 @@ Skrypty leżą w `sandbox/gtfs-experiments/`, a dane w `data/` w katalogu głów
 Symulacja-sieci.../                <- katalog glowny repozytorium
   sandbox/gtfs-experiments/
     logger_autobusy.py
+    gtfs_versions.py
     build_events.py
     week_analysis.py
     README_skrypty.md
@@ -40,11 +41,9 @@ uv run sandbox/gtfs-experiments/week_analysis.py 179
 
 ## Zależności
 
-`pandas`, `numpy`, `pyarrow`, `requests`, `gtfs-realtime-bindings` (importowane jako `google.transit`), `matplotlib` (opcjonalnie, bez niego pomijane są tylko wykresy).
+Analiza (`build_events.py`, `week_analysis.py`): `pandas`, `numpy`, `pyarrow`, `matplotlib` — zadeklarowane w `pyproject.toml`, wystarczy `uv sync`.
 
-```
-uv add pandas numpy pyarrow requests gtfs-realtime-bindings matplotlib
-```
+Logger (tylko na komputerze z loggerem): dodatkowo `requests` i `gtfs-realtime-bindings` (importowane jako `google.transit`).
 
 ## logger_autobusy.py
 
@@ -56,14 +55,26 @@ Logger GTFS-Realtime ZTP Kraków. Co `POLL_S` sekund (domyślnie 15) pobiera `Ve
 
 ## build_events.py
 
-Buduje zdarzenia przystankowe z VehiclePositions: epizody postoju ze statusem 1 (`STOPPED_AT`), łączone w kursach i przystankach (przerwa dłuższa niż 600 s zaczyna nowy epizod). Dla każdego zdarzenia liczy czas przyjazdu i odjazdu, niepewność czasu (odstęp do sąsiednich raportów pojazdu), dopasowuje rozkład z GTFS, wyznacza datę obsługi (dziś albo wczoraj, zależnie od tego, która daje czas bliższy rozkładowi) i opóźnienia przyjazdu i odjazdu. Flagi `arr_ok` i `dep_ok` oznaczają niepewność do 30 s, `arr_ok` dodatkowo wyklucza pierwszy przystanek kursu.
+Buduje zdarzenia przystankowe z VehiclePositions: epizody postoju ze statusem 1 (`STOPPED_AT`), łączone w kursach i przystankach (przerwa dłuższa niż 600 s zaczyna nowy epizod). Dla każdego zdarzenia liczy czas przyjazdu i odjazdu, niepewność czasu (odstęp do sąsiednich raportów pojazdu), dopasowuje rozkład z właściwej wersji GTFS (`gtfs_versions.py`), wyznacza datę obsługi i opóźnienia przyjazdu i odjazdu. Flagi `arr_ok` i `dep_ok` oznaczają niepewność do 30 s, `arr_ok` dodatkowo wyklucza pierwszy przystanek kursu.
 
-Na końcu drukuje raport jakości: rozkład niepewności, rozkład opóźnień, pokrycie przystanków, udział powtórzonych pozycji i niezależną kontrolę względem prognoz z TripUpdates.
+Na końcu drukuje raport jakości: udział zdarzeń dopasowanych do rozkładu i z datą obsługi, tabelę „zdarzenia dzień po dniu” (wg daty obsługi, wg daty lokalnej, bez daty obsługi, liczba linii, wersja kalendarza), rozkład niepewności, rozkład opóźnień, pokrycie przystanków, udział powtórzonych pozycji i niezależną kontrolę względem prognoz z TripUpdates.
 
-- Wejście: `data/raw_A/vehicle_positions`, `data/raw_A/trip_updates`, najnowszy `data/raw_A/static/GTFS_KRK_A_*.zip`.
-- Wyjście: `data/processed/observed_events.parquet`.
+- Wejście: `data/raw_A/vehicle_positions`, `data/raw_A/trip_updates`, wszystkie `data/raw_A/static/GTFS_KRK_A_*.zip`.
+- Wyjście: `data/processed/observed_events.parquet` (m.in. `service_date`, `service_id`, `gtfs_stamp`, `arr_delay_s`, `dep_delay_s`, `arr_ok`, `dep_ok`). `service_date` jest pusta, gdy kurs nie występuje w żadnej wersji rozkładu albo jego usługa nie jest aktywna wczoraj, dziś ani jutro.
 - Ważne stałe: `EPISODE_GAP_S = 600`, `UNC_OK_S = 30`.
-- Uwaga: używa tylko najnowszej wersji rozkładu. Jeśli w czasie zbierania danych rozkład się zmienił, opóźnienia z dni sprzed zmiany mogą być źle dopasowane.
+
+## gtfs_versions.py
+
+Moduł (nie skrypt) używany przez `build_events.py` i `week_analysis.py`. Łączy wszystkie wersje rozkładu zapisane przez logger.
+
+Feed ZTP jest kroczący: każda wersja zawiera kilka pokoleń usług z prefiksem daty w `service_id` i `trip_id` (np. `20261005_1_128936604_2`), a kalendarz jest tylko w `calendar_dates.txt`. Ten sam `trip_id` ma identyczne `stop_times` we wszystkich wersjach.
+
+- Rozkład kursu: z najnowszej wersji, która zawiera dany `trip_id` (kolumna `gtfs_stamp`).
+- Kalendarz dnia D: z najnowszej wersji, która ma jakikolwiek wpis na D (starsza wersja może jeszcze wymieniać usługi zastąpione przez nowszą).
+- Data obsługi zdarzenia: kandydaci wczoraj, dziś i jutro względem lokalnej daty przyjazdu, tylko dni z aktywną usługą kursu; wygrywa najmniejsze |opóźnienie|, przy remisie dziś.
+- Czasy GTFS liczone od „lokalne południe minus 12 h”, więc doba zmiany czasu (23 albo 25 h) nie przesuwa opóźnień.
+
+Testy: `uv run pytest`.
 
 ## week_analysis.py
 
@@ -85,6 +96,6 @@ Sekcje raportu:
 
 Na końcu drukuje listę kluczowych liczb do projektu.
 
-- Wejście: `data/processed/observed_events.parquet`, `data/raw_A/vehicle_positions` (tylko kolumna `fetched_at`, do wykrywania dziur), najnowszy GTFS.
+- Wejście: `data/processed/observed_events.parquet`, `data/raw_A/vehicle_positions` (tylko kolumna `fetched_at`, do wykrywania dziur), wszystkie wersje GTFS przez `gtfs_versions.py` (sekcja 2 liczy kursy wg kalendarza efektywnego danego dnia). Zdarzenia bez daty obsługi są pomijane z wypisaną liczbą.
 - Wyjście: wydruk na ekran, `data/processed/week_report/report.txt`, wykresy w `data/processed/week_report/figures/`.
 - Nie korzysta z żadnego wyniku innego skryptu poza `observed_events.parquet`.

@@ -8,16 +8,15 @@ Opcjonalnie: DAYS=2026-10-05,2026-10-06 uv run week_analysis.py   (reczny wybor 
 Wyniki: wydruk na ekran + data/processed/week_report/report.txt + wykresy w .../figures/
 """
 
-import glob
 import os
 import sys
 import traceback
 import warnings
-import zipfile
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from gtfs_versions import load_schedule
 
 warnings.filterwarnings("ignore")
 pd.set_option("display.width", 250)
@@ -131,42 +130,19 @@ def fe_slope(df, y, x, fe, cl):
 # WCZYTANIE
 # =====================================================================================
 print("week_analysis.py, linia pilotowa:", PILOT)
-zs = sorted(glob.glob(str(DATA / "static" / "GTFS_KRK_A_*.zip")))
-if not zs:
-    sys.exit("brak plikow GTFS w data/raw_A/static")
-print("wersje rozkladu (uzywam najnowszej):")
-for z_ in zs:
-    print("  ", Path(z_).name, f"{Path(z_).stat().st_size / 1e6:.1f} MB")
-if len(zs) > 1:
-    print(
-        "UWAGA: kilka wersji rozkladu w tygodniu. Zdarzenia z dni sprzed zmiany moga miec zle dopasowane opoznienia."
-    )
-
-with zipfile.ZipFile(zs[-1]) as z:
-    names = set(z.namelist())
-    trips = pd.read_csv(z.open("trips.txt"), dtype=str)
-    st = pd.read_csv(
-        z.open("stop_times.txt"),
-        dtype=str,
-        usecols=[
-            "trip_id",
-            "stop_id",
-            "stop_sequence",
-            "arrival_time",
-            "departure_time",
-        ],
-    )
-    stops = pd.read_csv(z.open("stops.txt"), dtype=str)
-    CAL = (
-        pd.read_csv(z.open("calendar.txt"), dtype=str)
-        if "calendar.txt" in names
-        else None
-    )
-    CD = (
-        pd.read_csv(z.open("calendar_dates.txt"), dtype=str)
-        if "calendar_dates.txt" in names
-        else None
-    )
+try:
+    SCHED = load_schedule(DATA / "static")
+except FileNotFoundError as e:
+    sys.exit(str(e))
+print("wersje rozkladu (rozklad kursu po trip_id, kalendarz dnia z najnowszej wersji, ktora go obejmuje):")
+for v_ in SCHED.versions:
+    print("  ", v_)
+trips = SCHED.trips
+st = SCHED.stop_times
+stops = SCHED.stops
+# kalendarz efektywny jest juz rozwiniety do par (service_id, date), wiec calendar.txt nie jest potrzebny
+CAL = None
+CD = SCHED.calendar
 
 st["stop_sequence"] = st["stop_sequence"].astype(int)
 st["arr_s"] = hms(st["arrival_time"])
@@ -200,6 +176,15 @@ for c in ("route_id", "trip_id", "stop_id", "vehicle_id"):
     ev[c] = ev[c].astype(str)
 for c in ("arr_ok", "dep_ok", "is_first", "is_last"):
     ev[c] = ev[c].fillna(False).astype(bool)
+_no_date = ev["service_date"].isna()
+if _no_date.any():
+    print(
+        "pomijam zdarzenia bez daty obslugi (kurs spoza rozkladu lub usluga nieaktywna):",
+        int(_no_date.sum()),
+        f"({_no_date.mean():.1%})",
+    )
+    ev = ev[~_no_date].copy()
+ev["service_date"] = ev["service_date"].astype(str)
 ev["delay"] = ev["arr_delay_s"].astype(float)
 _loc = pd.to_datetime(ev["arr_ts"].astype("int64"), unit="s", utc=True).dt.tz_convert(
     TZ
@@ -486,11 +471,14 @@ def s3():
         )
         for d in WORK
     }
-    ks = pd.DataFrame({a: {b: ks_stat(smp[a], smp[b]) for b in WORK} for a in WORK})
+    wk = [d for d in WORK if len(smp[d])]
+    if len(wk) < len(WORK):
+        print("dni robocze bez dobrych zdarzen (pominiete w KS):", sorted(set(WORK) - set(wk)))
+    ks = pd.DataFrame({a: {b: ks_stat(smp[a], smp[b]) for b in wk} for a in wk})
     print(ks.round(3).to_string())
     KEY["KS_max_miedzy_dniami_roboczymi"] = (
-        round(float(ks.values[np.triu_indices(len(WORK), 1)].max()), 3)
-        if len(WORK) > 1
+        round(float(ks.values[np.triu_indices(len(wk), 1)].max()), 3)
+        if len(wk) > 1
         else None
     )
     top = gw.groupby("route_id").size().sort_values(ascending=False).head(12).index
