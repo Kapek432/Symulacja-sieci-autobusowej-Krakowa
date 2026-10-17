@@ -1,6 +1,6 @@
 # Plan realizacji: propagacja opóźnień w sieci autobusowej Krakowa
 
-Aktualizacja: 16.10.2026.
+Aktualizacja: 17.10.2026.
 
 Dokument roboczy zespołu (3 osoby). Opis tematu dla prowadzącego jest w `TEMAT.md` i tu go nie dublujemy ani nie redagujemy.
 
@@ -24,6 +24,8 @@ Dokument roboczy zespołu (3 osoby). Opis tematu dla prowadzącego jest w `TEMAT
 **Dane:** logger GTFS-RT działa **ciągle na osobnym komputerze**. Co jakiś czas dane trafiają z niego na wspólny folder Google Drive, a każdy z zespołu pobiera je stamtąd ręcznie i scala z lokalnym `data/raw_A` (do końca projektu; procedura w M0). Drive służy też jako kopia poza dyskiem loggera, plus okresowa kopia na inny dysk. Pipeline przetwarza je przyrostowo, a kalibracja pracuje na zamrożonej liście dni (decyzja 8). Surowych danych nie commitować publicznie.
 
 **Unity:** tor równoległy od M2; **Unity MCP**. Symulacja w Pythonie; Unity odtwarza eksport.
+
+**Kontekst miasta (tor U):** istniejące budynki Geoportal LoD1/LoD2 + automatycznie pobierane NMT i ortofotomapa WCS; geometria ulic/wody/zieleni z OSM pozostaje do dodania. Przygotowanie danych i próbny fragment miasta może iść równolegle z replayem i integracją DES. Pobieranie rastrów: [GEOPORTAL.md](GEOPORTAL.md), decyzja 10; import do Unity jest oddzielnym zadaniem.
 
 **Szczegóły operacyjne:** [`milestones/`](milestones/README.md).
 
@@ -107,6 +109,8 @@ Dotyczą kilku kamieni naraz; szczegóły w checklistach.
    - **C. Sprzężenie pośrednie przez sieć.** Bloki międzyliniowe (101 bloków w dniu roboczym) łączą linie bez wspólnych odcinków. Model kalibrowany na statystykach lokalnych przewiduje korelację opóźnień linii połączonych tylko blokami; sprawdzamy ją w danych jako walidację, której nie ma w funkcji celu (M4 C2).
    
    Ablacje (M4 D) pokazują wkład każdego filaru. Szybka ścieżka zostaje do kalibracji przy γ = 0 i do skanów B; wszystko z interakcją A liczy SimPy. `TEMAT.md` bez zmian: rozszerzenie γ mieści się w jego opisie sprzężenia od odstępu.
+
+10. **Źródła i przygotowanie miasta dla Unity (17.10).** Budynki bierzemy z lokalnych zbiorów Geoportalu (LoD1 Kraków 2024, LoD2 Kraków 2017; aktualność i układ wysokościowy do sprawdzenia przy imporcie). NMT i ortofotomapę pobieramy kodem z oficjalnych WCS GUGiK (`uv run --group geodata fetch-geoportal`), zamiast ręcznego klikania arkuszy. Wyjście: kafelki GeoTIFF w EPSG:2180; NMT 1 m w PL-EVRF2007-NH, ortofotomapa zadanego rastra 0,5 m/piksel. Rozdzielczości, endpointy i limity w `configs/config.yaml`. Dane zostają w ignorowanym `data/geoportal/`; metadane każdego kafelka zapisują URL, czas pobrania, parametry, kompletność i SHA-256. Cache utrzymuje lokalną migawkę; czas pobrania nie jest datą pomiaru i nie gwarantujemy odtworzenia identycznej mozaiki z aktualizowanej usługi. WCS dla małych obszarów został potwierdzony pobraniem i odczytem obu rastrów przy Rynku Głównym. Dopasowanie wysokości/układu lokalnego, import terenu, tekstur i budynków oraz geometria OSM to kolejne zadania toru U; nie wpływają na logikę DES.
 
 ---
 

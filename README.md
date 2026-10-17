@@ -6,6 +6,7 @@ Propagacja opóźnień w sieci autobusowej Krakowa: symulacja zdarzeń dyskretny
 - Plan realizacji i kamienie milowe: [`docs/PLAN_REALIZACJI.md`](docs/PLAN_REALIZACJI.md)
 - Dziennik prac (co zrobione, decyzje; wpis po każdej implementacji): [`docs/DZIENNIK.md`](docs/DZIENNIK.md)
 - Opis skryptów danych: [`sandbox/gtfs-experiments/README_skrypty.md`](sandbox/gtfs-experiments/README_skrypty.md)
+- NMT i ortofotomapa do Unity: [`docs/GEOPORTAL.md`](docs/GEOPORTAL.md), komenda `uv run --group geodata fetch-geoportal --bbox XMIN YMIN XMAX YMAX` (EPSG:2180).
 
 ## Szybki start
 

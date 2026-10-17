@@ -31,3 +31,26 @@ days:
   split_file: configs/days_split.yaml
   # docelowy udzial dni walidacyjnych w kazdej warstwie (typ dnia x pokolenie rozkladu) propozycji
   valid_fraction: 0.34
+
+# Kontekst miasta dla Unity; bbox podajemy w EPSG:2180 (easting, northing).
+geoportal:
+  output_dir: data/geoportal/rasters
+  tile_size_m: 500
+  max_tiles: 100
+  max_tile_pixels: 4000000
+  max_response_bytes: 67108864
+  timeout_s: 45
+  attempts: 3
+  retry_delay_s: 1
+  layers:
+    nmt:
+      endpoint: https://mapy.geoportal.gov.pl/wss/service/PZGIK/NMT/GRID1/WCS/DigitalTerrainModel
+      coverage: DTM_PL-EVRF2007-NH
+      format: image/x-aaigrid
+      resolution_m: 1
+      vertical_crs: PL-EVRF2007-NH
+    ortho:
+      endpoint: https://mapy.geoportal.gov.pl/wss/service/PZGIK/ORTO/WCS/StandardResolution
+      coverage: Orthoimagery_StandardResolution
+      format: GEOTIFF
+      resolution_m: 0.5

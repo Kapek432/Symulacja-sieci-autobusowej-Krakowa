@@ -31,6 +31,34 @@ Zasady:
 
 ---
 
+## 2026-10-17 — automatyczne pobieranie NMT i ortofotomapy dla Unity (tor U)
+
+**Kto:** Kacper Lipiec
+**Commity:** ten commit — `(feat) pobieranie NMT i ortofotomapy z Geoportalu`
+
+Zrobione:
+- Komenda `fetch-geoportal` w `src/krakbus/ingest/geoportal.py`: obszar EPSG:2180, podział na kafelki, pobieranie NMT i ortofotomapy przez WCS, konwersja do GeoTIFF i kontrola georeferencji/danych.
+- Retry pustych, błędnych i przerwanych odpowiedzi, poprawne CA dla HTTPS, limit rozmiaru i liczby kafelków, zachowanie masek NoData, publikowanie zweryfikowanych plików i wznowienie po SHA-256 oraz parametrach żądania.
+- Definicje warstw i progi w `configs/config.yaml`, opcjonalna grupa zależności `geodata`, instrukcja `docs/GEOPORTAL.md` i odnośnik w README.
+- Decyzja 10 i uzupełnienie planu toru U: przygotowanie miasta równolegle z replayem, osobne zadania importu terenu, tekstur, budynków i geometrii OSM.
+
+Decyzje:
+- NMT pobieramy jako wysokości AAIGrid w PL-EVRF2007-NH, a nie cieniowanie WMS; obie warstwy zapisujemy jako lokalne GeoTIFF-y EPSG:2180.
+- Parametry domyślne: NMT 1 m, ortofotomapa rastra 0,5 m, kafelki 500 m. Pobieranie sekwencyjne z limitami — duży obszar dzielimy na regiony lub świadomie zmieniamy konfigurację.
+- Dane i metadane pozostają w ignorowanym `data/geoportal/`. URL, czas pobrania i SHA-256 dokumentują lokalną migawkę; data pomiaru/rocznik mozaiki nie są utożsamiane z czasem pobrania.
+
+Sprawdzone:
+- `uv run --group geodata pytest -q`: 124 passed, w tym 22 testy pobierania (bez internetu).
+- `uv run --group geodata ruff check src tests`; `git diff --check`.
+- Rzeczywisty test: `uv run --group geodata fetch-geoportal --bbox 566967 244147 567167 244347 --out data/geoportal/rasters/smoke_rynek_20261017 --overwrite`. Obszar 200 × 200 m przy Rynku, NMT 200 × 200, RGB 400 × 400; obie warstwy 100% poprawnych danych, NMT 208,81–212,62 m. Wyniki lokalne, poza commitem.
+- Ponowienie bez `--overwrite`: zgodny cache; odczyt GeoTIFF-ów i weryfikacja georeferencji. `.gitignore` wyklucza wyniki i ich metadane.
+
+Otwarte / dalej:
+- Import do Unity i dopasowanie układu lokalnego/wysokości autobusów, konwersja lokalnych budynków LoD1/LoD2, pozyskanie ulic/wody/zieleni OSM.
+- Wybór konkretnych roczników przez skorowidze WFS; obecne WCS udostępniają aktualizowane mozaiki. Duży obszar miasta nie był jeszcze pobierany tym narzędziem.
+
+---
+
 ## 2026-10-16 — złożoność na trzech filarach: decyzja 9 (plan M3–M5)
 
 **Kto:** Kacper Lipiec

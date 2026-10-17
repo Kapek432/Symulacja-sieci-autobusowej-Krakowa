@@ -54,9 +54,12 @@ Wspólny schemat (Parquet lub JSON Lines), np.:
 - [ ] Rozróżnialne wizualnie (np. dwa odcienie / outline)
 - [ ] Co najmniej jedna linia / jeden korytarz do pokazu
 
-### Faza 4 — kontekst miasta (po replayu)
+### Faza 4 — kontekst miasta (przygotowanie równolegle z replayem)
 
+- [x] Automatyczne pobieranie NMT i ortofotomapy z WCS Geoportalu: kafelki GeoTIFF + metadane, retry, kontrola i cache — [GEOPORTAL.md](../GEOPORTAL.md), decyzja 10 (17.10)
+- [ ] Import NMT jako terenu Unity i ortofotomapy jako tekstury; wspólny układ z autobusami i zgodne wysokości
 - [ ] Import budynków (Geoportal LoD1 lub OSM) — uproszczenie OK
+- [ ] Ulice, woda i zieleń z OSM; próbny fragment przy linii 179, potem rozszerzenie obszaru
 - [ ] Performance wizualizacji: bbox / LOD; **dane city-wide** mogą być downsamplowane (nie mylić z modelem — model ma jechać całą sieć w Pythonie)
 - [ ] Opcja: warstwa „cała sieć” jako uproszczone trajektorie + szczegół na korytarzu
 
