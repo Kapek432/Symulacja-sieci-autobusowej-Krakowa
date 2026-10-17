@@ -31,6 +31,29 @@ Zasady:
 
 ---
 
+## 2026-10-17 — wygląd autobusów i przystanków w planie Unity (tor U)
+
+**Kto:** Kacper Lipiec
+**Commity:** ten commit — `(docs) modele autobusów i przystanków w planie Unity`
+
+Zrobione:
+- Decyzja 11 i skrót zakresu w `docs/PLAN_REALIZACJI.md`: modele autobusów, przystanków, oznaczenia opóźnień, LOD i etapowanie.
+- Checklista modeli w fazie 4 toru U oraz kryterium pokazu autobusów i przystanków na uzgodnionym fragmencie miasta.
+- Zachowane ustalenia o NMT, ortofotomapie, budynkach oraz ulicach/wodzie/zieleni; modele trafiają do wspólnego pokazu na fragmencie linii 179.
+
+Decyzje:
+- Najpierw jeden model autobusu i dwa warianty przystanku — wystarczy do integracji i sprawdzenia czytelności oraz wydajności; dalsze typy pojazdów i wierne rekonstrukcje przystanków później.
+- Zachowujemy malowanie autobusu, a opóźnienie pokazujemy oddzielnie. Brak informacji o wyposażeniu przystanku oznacza wariant umowny, nie potwierdzenie rzeczywistej wiaty.
+- Szczegółowe modele z bliska i uproszczone z daleka; geometria wizualna pozostaje niezależna od logiki symulacji.
+
+Sprawdzone:
+- Zgodność checklisty toru U z decyzjami 10–11 i dotychczasowymi ustaleniami; `git diff --check`.
+
+Otwarte / dalej:
+- Przygotowanie lub wybór modeli oraz ich integracja i pomiar wydajności; ten wpis dokumentuje plan, nie wykonanie modeli.
+
+---
+
 ## 2026-10-17 — automatyczne pobieranie NMT i ortofotomapy dla Unity (tor U)
 
 **Kto:** Kacper Lipiec

@@ -27,6 +27,8 @@ Dokument roboczy zespołu (3 osoby). Opis tematu dla prowadzącego jest w `TEMAT
 
 **Kontekst miasta (tor U):** istniejące budynki Geoportal LoD1/LoD2 + automatycznie pobierane NMT i ortofotomapa WCS; geometria ulic/wody/zieleni z OSM pozostaje do dodania. Przygotowanie danych i próbny fragment miasta może iść równolegle z replayem i integracją DES. Pobieranie rastrów: [GEOPORTAL.md](GEOPORTAL.md), decyzja 10; import do Unity jest oddzielnym zadaniem.
 
+**Wygląd pojazdów i przystanków (tor U):** autobusy jako rozpoznawalne modele 3D z kołami, szybami i malowaniem; przystanki jako słupki z nazwami oraz warianty z wiatą, ławką i fragmentem peronu. Pierwszy etap to jeden model autobusu i dwa warianty przystanku, sprawdzone na fragmencie linii 179. Osobne oznaczenia opóźnień zachowują malowanie pojazdu, a modele upraszczamy z odległością kamery (LOD). Szczegóły: decyzja 11 i checklisty toru U.
+
 **Szczegóły operacyjne:** [`milestones/`](milestones/README.md).
 
 ---
@@ -111,6 +113,8 @@ Dotyczą kilku kamieni naraz; szczegóły w checklistach.
    Ablacje (M4 D) pokazują wkład każdego filaru. Szybka ścieżka zostaje do kalibracji przy γ = 0 i do skanów B; wszystko z interakcją A liczy SimPy. `TEMAT.md` bez zmian: rozszerzenie γ mieści się w jego opisie sprzężenia od odstępu.
 
 10. **Źródła i przygotowanie miasta dla Unity (17.10).** Budynki bierzemy z lokalnych zbiorów Geoportalu (LoD1 Kraków 2024, LoD2 Kraków 2017; aktualność i układ wysokościowy do sprawdzenia przy imporcie). NMT i ortofotomapę pobieramy kodem z oficjalnych WCS GUGiK (`uv run --group geodata fetch-geoportal`), zamiast ręcznego klikania arkuszy. Wyjście: kafelki GeoTIFF w EPSG:2180; NMT 1 m w PL-EVRF2007-NH, ortofotomapa zadanego rastra 0,5 m/piksel. Rozdzielczości, endpointy i limity w `configs/config.yaml`. Dane zostają w ignorowanym `data/geoportal/`; metadane każdego kafelka zapisują URL, czas pobrania, parametry, kompletność i SHA-256. Cache utrzymuje lokalną migawkę; czas pobrania nie jest datą pomiaru i nie gwarantujemy odtworzenia identycznej mozaiki z aktualizowanej usługi. WCS dla małych obszarów został potwierdzony pobraniem i odczytem obu rastrów przy Rynku Głównym. Dopasowanie wysokości/układu lokalnego, import terenu, tekstur i budynków oraz geometria OSM to kolejne zadania toru U; nie wpływają na logikę DES.
+
+11. **Modele autobusów i przystanków (17.10).** Docelowa wizualizacja obejmuje rozpoznawalne autobusy 3D oraz modelowane przystanki w otoczeniu miasta. Zaczynamy od jednego wspólnego modelu autobusu (koła, szyby, malowanie) i dwóch prefabów przystanku: słupek z nazwą oraz wariant z wiatą, ławką i fragmentem peronu. Model autobusu podpinamy do istniejącego odtwarzania pozycji i kierunku; zaznaczanie oraz panel informacji pozostają dostępne. Opóźnienie pokazujemy osobnym znacznikiem lub obwódką, zachowując malowanie i czytelne rozróżnienie obs/sim. GTFS daje lokalizacje i nazwy przystanków, ale nie pełny opis ich wyposażenia — przy braku danych stosujemy jawnie umowny wariant standardowy, bez deklarowania wiernego odwzorowania konkretnego przystanku. Z bliska pełne modele, z daleka uproszczone modele lub znaczniki (LOD); płynność sprawdzamy z docelową liczbą pojazdów. Pierwszy pokaz na fragmencie linii 179 wraz z terenem, teksturą, budynkami i otoczeniem; później rozszerzenie obszaru. Różne typy autobusów i dokładne rekonstrukcje wybranych przystanków są kolejnym rozszerzeniem po tej podstawie.
 
 ---
 

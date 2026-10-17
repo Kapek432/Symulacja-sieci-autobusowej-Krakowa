@@ -63,6 +63,19 @@ Wspólny schemat (Parquet lub JSON Lines), np.:
 - [ ] Performance wizualizacji: bbox / LOD; **dane city-wide** mogą być downsamplowane (nie mylić z modelem — model ma jechać całą sieć w Pythonie)
 - [ ] Opcja: warstwa „cała sieć” jako uproszczone trajektorie + szczegół na korytarzu
 
+#### Modele autobusów i przystanków (decyzja 11)
+
+- [ ] Jeden rozpoznawalny model autobusu 3D: koła, szyby i malowanie; prefab podłączony do pozycji i kierunku z replayu
+- [ ] Zachować zaznaczanie autobusu i panel danych po zamianie bryły na model
+- [ ] Opóźnienia jako osobny znacznik/obwódka, bez utraty malowania; czytelne rozróżnienie obserwacji i symulacji
+- [ ] Dwa warianty przystanku: słupek z nazwą oraz słupek + wiata + ławka + fragment peronu
+- [ ] Rozmieścić przystanki według GTFS i dopasować do terenu; brak danych o wyposażeniu oznaczać jako standardowy wariant umowny
+- [ ] LOD autobusów i przystanków: szczegółowe modele z bliska, uproszczone modele/znaczniki z daleka; kontrola płynności przy setkach pojazdów
+- [ ] Próbny fragment linii 179: autobusy i oba warianty przystanku na wspólnym podłożu NMT/ortofotomapy, z budynkami oraz ulicami/wodą/zielenią
+- [ ] Po sprawdzeniu podstawy: kolejne typy autobusów i dokładniejsze modele wybranych przystanków
+
+Kolejność: przygotowanie danych miasta → próbny teren i budynki → integracja jednego autobusu i dwóch wariantów przystanku → kontrola wyglądu z bliska/z daleka i wydajności → rozszerzenie obszaru. Modele i dane miasta można przygotowywać równolegle ze sterowaniem czasem i integracją DES.
+
 ### Faza 5 — interakcja (tylko jeśli Fazy 1–3 Done i raport nie płonie)
 
 - [ ] Proste przełączanie scenariusza / run_id z wyeksportowanych plików
@@ -72,6 +85,7 @@ Wspólny schemat (Parquet lub JSON Lines), np.:
 
 - Live demo: replay dnia z kolorami opóźnienia przez Unity, sterowane danymi z Pythona.
 - Rzeczywistość ‖ symulacja działa na uzgodnionym fragmencie sieci.
+- Uzgodniony fragment miasta ma rozpoznawalne autobusy 3D i przystanki (wariant słupka oraz wariant z wiatą); oznaczenia opóźnień i obs/sim pozostają czytelne na tle terenu i budynków.
 - Zespół umie odtworzyć demo z README (ścieżka pliku + Play).
 
 ## Pułapki
