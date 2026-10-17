@@ -31,6 +31,30 @@ Zasady:
 
 ---
 
+## 2026-10-17 — konfiguracja Unity MCP dla Codex i Claude Code (tor U)
+
+**Kto:** Kacper Lipiec
+**Commity:** ten commit — `(docs) konfiguracja Unity MCP dla Codex i Claude Code`
+
+Zrobione:
+- Rozszerzona instrukcja `docs/UNITY_MCP.md`: wspólne uruchomienie serwera HTTP, konfiguracja Codex i Claude Code, sprawdzenie odczytu sceny oraz diagnostyka.
+- Wyjaśniona różnica między Unity MCP (CoplayDev) a Unity CLI/Pipeline; zaznaczona gotowość danych demonstracyjnych w repo i opcjonalność ponownego eksportu.
+- Uzupełniony punkt dokumentacji w kamieniu milowym toru U.
+
+Decyzje:
+- Jeden pakiet Unity MCP dla obu klientów — wersja 10.3.0 zawiera konfigurator Codex; poprzednia instrukcja opisywała wyłącznie Claude Code.
+- Konfiguracja serwera pozostaje lokalna w `~/.codex/config.toml`; dokumentacja podaje przykład bez zmiany ustawień użytkownika.
+
+Sprawdzone:
+- Dokumentacja CoplayDev przez Context7 i kod zainstalowanego pakietu 10.3.0: `CodexConfigurator`, ścieżka TOML, pozycja menu i kontrolki połączenia HTTP.
+- Składnia `codex mcp add --url` w lokalnym CLI oraz oficjalna dokumentacja konfiguracji MCP w Codex.
+- Przegląd diffu dokumentacji i `git diff --check`.
+
+Otwarte / dalej:
+- Próba odczytu sceny przez MCP po uruchomieniu Unity i serwera; konfiguracja klienta sama nie potwierdza połączenia. W momencie sprawdzenia serwer na `127.0.0.1:8080` nie odpowiadał.
+
+---
+
 ## 2026-10-16 — Unity replay v1: obserwacje GPS na grafie sieci (tor U, faza 1)
 
 **Kto:** Bartek

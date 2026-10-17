@@ -34,6 +34,7 @@ Wspólny schemat (Parquet lub JSON Lines), np.:
 
 ### Faza 1 — scena i smoke (‖ M2)
 
+- [x] Instrukcja konfiguracji Unity MCP dla Codex i Claude Code, diagnostyka HTTP i rozróżnienie Unity CLI/Pipeline — [UNITY_MCP.md](../UNITY_MCP.md) (17.10)
 - [x] Projekt Unity w repo (albo podkatalog uzgodniony; duże Library/ w gitignore)
 - [x] Przez Unity MCP: pusta scena + obiekt „Bus” + kamera
 - [x] Loader pliku eksportu (Editor play mode / runtime)
