@@ -25,3 +25,25 @@ build/
 
 # OS
 .DS_Store
+
+data/geoportal/LoD*/*
+data/processed/*
+data/raw_A/*
+# Unity (project in unity/)
+unity/[Ll]ibrary/
+unity/[Tt]emp/
+unity/[Oo]bj/
+unity/[Bb]uild/
+unity/[Bb]uilds/
+unity/[Ll]ogs/
+unity/[Uu]ser[Ss]ettings/
+unity/*.csproj
+unity/*.sln
+unity/*.slnx
+unity/Assets/StreamingAssets/data/*
+!unity/Assets/StreamingAssets/data/network.json*
+!unity/Assets/StreamingAssets/data/obs_peak30.jsonl*
+!unity/Assets/StreamingAssets/data/obs_peak30.meta.json*
+
+# Unity: captures
+unity/Captures/

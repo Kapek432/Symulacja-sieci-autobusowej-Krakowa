@@ -31,6 +31,57 @@ Zasady:
 
 ---
 
+## 2026-10-17 — konfiguracja Unity MCP dla Codex i Claude Code (tor U)
+
+**Kto:** Kacper Lipiec
+**Commity:** ten commit — `(docs) konfiguracja Unity MCP dla Codex i Claude Code`
+
+Zrobione:
+- Rozszerzona instrukcja `docs/UNITY_MCP.md`: wspólne uruchomienie serwera HTTP, konfiguracja Codex i Claude Code, sprawdzenie odczytu sceny oraz diagnostyka.
+- Wyjaśniona różnica między Unity MCP (CoplayDev) a Unity CLI/Pipeline; zaznaczona gotowość danych demonstracyjnych w repo i opcjonalność ponownego eksportu.
+- Uzupełniony punkt dokumentacji w kamieniu milowym toru U.
+
+Decyzje:
+- Jeden pakiet Unity MCP dla obu klientów — wersja 10.3.0 zawiera konfigurator Codex; poprzednia instrukcja opisywała wyłącznie Claude Code.
+- Konfiguracja serwera pozostaje lokalna w `~/.codex/config.toml`; dokumentacja podaje przykład bez zmiany ustawień użytkownika.
+
+Sprawdzone:
+- Dokumentacja CoplayDev przez Context7 i kod zainstalowanego pakietu 10.3.0: `CodexConfigurator`, ścieżka TOML, pozycja menu i kontrolki połączenia HTTP.
+- Składnia `codex mcp add --url` w lokalnym CLI oraz oficjalna dokumentacja konfiguracji MCP w Codex.
+- Przegląd diffu dokumentacji i `git diff --check`.
+
+Otwarte / dalej:
+- Próba odczytu sceny przez MCP po uruchomieniu Unity i serwera; konfiguracja klienta sama nie potwierdza połączenia. W momencie sprawdzenia serwer na `127.0.0.1:8080` nie odpowiadał.
+
+---
+
+## 2026-10-16 — Unity replay v1: obserwacje GPS na grafie sieci (tor U, faza 1)
+
+**Kto:** Bartek
+**Commity:** 865f7fc, 9437ca8, 34ae11a, d9252bc, 0b5a3dd, 6946e53, ef484f0, 5061e92, d10ad3c, bea3938, 827821d, 070bfa5, 1265c12 (spec i plan: 3363f88, 491ab06)
+
+Zrobione:
+- Wspólny moduł `krakbus.viz.geo`, uproszczenie łamanych (Douglas-Peucker 2 m), `export-network` (przystanki i odcinki tras do `network.json`), projekt Unity z loaderami, kolorami wg `delay_s`, zegarem, sceną, HUD, panelem zaznaczenia i etykietami przystanków.
+- Instrukcja uruchomienia: `docs/UNITY_MCP.md`, sekcja „Replay v1”.
+
+Decyzje:
+- Ruch z pozycji GPS, nie ze zdarzeń przystankowych — pozycje dają płynny ruch bez interpolacji między zdarzeniami (alternatywa: zdarzenia, odrzucona w v1).
+- Tłem jest graf sieci (przystanki i trasy), nie mapa — zero zależności od zewnętrznych podkładów; miasto dojdzie później.
+- Wspólne `krakbus.viz.geo` dla exportera pozycji i sieci — ten sam rzut współrzędnych (Rynek, equirectangular) po obu stronach.
+- Rzut przystanków na łamaną programowaniem dynamicznym (monotoniczny, minimalna suma odległości) — kolejność przystanków nie cofa się wzdłuż trasy; przystanek dalej niż 100 m od kształtu daje odcinek prosty.
+- Python przygotowuje pliki, Unity tylko czyta — brak logiki modelu i GTFS w C#.
+- Czytelność z dystansu: linie jako siatka 1-px, skala autobusów rośnie z wysokością kamery; etykiety przystanków deduplikowane i omijają HUD.
+
+Sprawdzone:
+- Eksport sieci z prawdziwego GTFS (GTFS_KRK_A_20261012_123022.zip): 2829 przystanków, 3433 odcinków, 2 proste (trasa 270, przystanek 11701 > 100 m od kształtu), ok. 19 s; `network.json` 0,9 MB.
+- `obs_peak30.jsonl` (14.10.2026 07:30–08:00, 537 pojazdów): wczytanie w Unity ok. 2,6 s, ok. 508 autobusów widocznych kilka sekund po starcie.
+- Testy: Unity EditMode 27/27; Python `tests/viz` 37 passed.
+
+Otwarte / dalej:
+- Tło miasta (ortofoto/OSM/budynki), sterowanie czasem (suwak), filtr linii, odtwarzanie symulacji po łamanych z `network.json`, porównanie obs ‖ sym (fazy 2–3 toru U).
+
+---
+
 ## 2026-10-16 — złożoność na trzech filarach: decyzja 9 (plan M3–M5)
 
 **Kto:** Kacper Lipiec
